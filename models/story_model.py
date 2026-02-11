@@ -6,7 +6,6 @@ class Page(BaseModel):
     text_primary: str = Field(..., description="Story text in the primary language (Child's context)")
     text_secondary: str = Field(..., description="Story text in the secondary language (Parent's context)")
     illustration_prompt: str = Field(..., description="Detailed description for an AI image generator. MUST include the character's visual features defined in the Story class.")
-    sound_effects: List[str] = Field(..., description="List of onomatopoeia words used in this page")
 
 class Story(BaseModel):
     title_primary: str = Field(..., description="Title in primary language")
