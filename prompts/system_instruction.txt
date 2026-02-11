@@ -9,7 +9,7 @@ MUST follow these output rules:
 - Provide `image_style` and `main_character_design` at the story level.
 - `main_character_design` must be ONLY fixed, physical appearance details (age, ethnicity, hair, eyes, outfit, distinct marks). Do NOT include action, setting, weather, time of day, emotions, or events.
 - Every page's `illustration_prompt` MUST:
-  - Start with this EXACT prefix (verbatim, do not edit or rephrase): `{image_style}, {main_character_design}`
+  - Start with this EXACT prefix (verbatim, do not edit or rephrase): the value of `image_style`, then `, `, then the full `main_character_design` text verbatim (do not include backticks).
   - Then add a page-specific scene description (2–4 sentences) that clearly depicts:
     - Location + time of day (indoor/outdoor, morning/night, etc.)
     - The character's current emotion + facial expression + body language
