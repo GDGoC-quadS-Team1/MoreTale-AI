@@ -1,23 +1,23 @@
 # Branching Strategy
 
-This repository uses one integrated branch and two long-lived workstream branches.
+This repository uses one integrated branch and `feat/*` work branches.
 
-## Branch roles
+## Branch Types
 
 - `main`
   - Integrated baseline (story + tts).
   - Release and deployment reference.
 
-- `feature/story-core`
-  - Story-focused workstream.
+- `feat/story-core`
+  - Story-focused long-lived workstream (optional).
   - Preferred scope:
     - `generators/story_generator.py`
     - `models/`
     - `prompts/`
     - story-related tests/docs
 
-- `feature/tts-core`
-  - TTS-focused workstream.
+- `feat/tts-core`
+  - TTS-focused long-lived workstream (optional).
   - Preferred scope:
     - `generators/tts_*`
     - TTS integration area in `main.py`
@@ -25,14 +25,15 @@ This repository uses one integrated branch and two long-lived workstream branche
 
 ## Workflow
 
-1. Implement changes in the appropriate workstream branch.
-2. Open PR from workstream branch into `main`.
-3. Require CI success before merge.
-4. Keep `main` as the single integrated source of truth.
+1. Start from the latest `main` and create a `feat/*` branch.
+2. Implement changes in that branch.
+3. Open PR into `main`.
+4. Require CI success before merge.
+5. Keep `main` as the single integrated source of truth.
 
 ## Sync policy
 
-- Periodically sync `main` back into both long-lived branches:
+- Periodically sync `main` back into long-lived `feat/*` branches:
   - At least monthly, or before each release cycle.
 - For shared files (`README.md`, CI configs, env docs):
   - Update in the branch where the change originates.
@@ -42,9 +43,9 @@ This repository uses one integrated branch and two long-lived workstream branche
 
 - `area:story`
 - `area:tts`
+- `area:docs`
 - `area:shared`
 
 ## Notes
 
-- The current baseline commit used to initialize this model is `e00f128`.
 - Branch protection is recommended on `main` (PR-required, no direct push, CI-required).
