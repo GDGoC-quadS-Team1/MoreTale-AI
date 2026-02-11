@@ -16,14 +16,18 @@ MoreTale-AI/
 ├── main.py
 ├── generators/
 │   ├── README.md
-│   ├── story_generator.py
-│   ├── tts_generator.py
-│   ├── tts_pipeline.py
-│   ├── tts_runtime.py
-│   ├── tts_stream.py
-│   ├── tts_audio.py
-│   ├── tts_text.py
-│   └── tts_manifest.py
+│   ├── story/
+│   │   └── story_generator.py
+│   ├── tts/
+│   │   ├── tts_generator.py
+│   │   ├── tts_pipeline.py
+│   │   ├── tts_runtime.py
+│   │   ├── tts_stream.py
+│   │   ├── tts_audio.py
+│   │   ├── tts_text.py
+│   │   └── tts_manifest.py
+│   └── illustration/
+│       └── illustration_generator.py
 ├── models/
 │   └── story_model.py
 ├── prompts/
@@ -155,7 +159,7 @@ python -m unittest discover -s tests -v
 - `GEMINI_TTS_API_KEY environment variable not set.`
   - `--enable_tts` 사용 시 `.env`에 `GEMINI_TTS_API_KEY` 설정 필요
 - `GEMINI_API_KEY environment variable not set.`
-  - 현재 `story_generator.py`의 에러 문구는 `GEMINI_API_KEY`로 표시되지만,
+  - 현재 `generators/story/story_generator.py`의 에러 문구는 `GEMINI_API_KEY`로 표시되지만,
     실제로는 `.env`의 `GEMINI_STORY_API_KEY`가 필요합니다.
 - `ModuleNotFoundError`
   - 가상환경 활성화 확인
