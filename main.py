@@ -1,4 +1,5 @@
 from generators.story_generator import StoryGenerator
+from generators.tts_generator import TTSGenerator
 from models.story_model import Story
 import sys
 import os
@@ -35,6 +36,33 @@ def main():
         "--include_style_guide",
         action="store_true",
         help="Include prompts/style_guide.txt in the system instruction (more detailed but longer prompt).",
+    )
+    parser.add_argument(
+        "--enable_tts",
+        action="store_true",
+        help="Generate page-level audiobook WAV files (primary/secondary language split).",
+    )
+    parser.add_argument(
+        "--tts_model",
+        default="gemini-2.5-flash-preview-tts",
+        help="Gemini TTS model name to use when --enable_tts is set.",
+    )
+    parser.add_argument(
+        "--tts_voice",
+        default="Achernar",
+        help="Voice name for Gemini TTS when --enable_tts is set.",
+    )
+    parser.add_argument(
+        "--tts_temperature",
+        type=float,
+        default=1.0,
+        help="TTS temperature when --enable_tts is set.",
+    )
+    parser.add_argument(
+        "--tts_request_interval_sec",
+        type=float,
+        default=10.0,
+        help="Seconds between TTS requests to respect RPM limits.",
     )
     
     args = parser.parse_args()
@@ -73,6 +101,42 @@ def main():
             f.write(story.model_dump_json(indent=4))
             
         print(f"Story saved to: {filepath}")
+
+        if args.enable_tts:
+            tts_api_key = os.getenv("GEMINI_TTS_API_KEY")
+            if not tts_api_key:
+                raise ValueError(
+                    "GEMINI_TTS_API_KEY environment variable not set. "
+                    "Story JSON was generated, but TTS requires this key."
+                )
+
+            print("Generating audiobook WAV files...")
+            tts_generator = TTSGenerator(
+                api_key=tts_api_key,
+                model_name=args.tts_model,
+                voice_name=args.tts_voice,
+                temperature=args.tts_temperature,
+                request_interval_sec=args.tts_request_interval_sec,
+            )
+            tts_result = tts_generator.generate_book_audio(
+                story=story,
+                output_dir=output_dir,
+                primary_language=args.primary_lang,
+                secondary_language=args.secondary_lang,
+                skip_existing=True,
+            )
+
+            print(
+                "TTS summary: "
+                f"total={tts_result['total_tasks']} "
+                f"generated={tts_result['generated']} "
+                f"skipped={tts_result['skipped']} "
+                f"failed={tts_result['failed']}"
+            )
+
+            if tts_result["failed"] > 0:
+                failures = "\n".join(tts_result["failures"])
+                raise RuntimeError(f"TTS generation failed.\n{failures}")
         
     except Exception as e:
         print(f"Failed to generate story: {e}")
