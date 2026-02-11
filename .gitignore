@@ -1,0 +1,5 @@
+/.env
+/.moretale
+__pycache__/
+*.pyc
+outputs/
