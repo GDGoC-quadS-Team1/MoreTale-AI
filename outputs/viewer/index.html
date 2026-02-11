@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MoreTale Outputs Viewer</title>
+    <link rel="stylesheet" href="/viewer/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>MoreTale Outputs Viewer</h1>
+
+      <section class="toolbar">
+        <label for="run-select">실행 폴더</label>
+        <select id="run-select"></select>
+      </section>
+
+      <section id="status" class="status" aria-live="polite"></section>
+
+      <section id="book-meta" class="book-meta hidden">
+        <h2 id="book-title"></h2>
+        <p id="book-subtitle"></p>
+        <p id="book-lang"></p>
+      </section>
+
+      <section id="page-view" class="page-view hidden">
+        <div class="page-nav">
+          <button id="prev-btn" type="button">이전</button>
+          <span id="page-indicator">0 / 0</span>
+          <button id="next-btn" type="button">다음</button>
+        </div>
+
+        <article class="page-card">
+          <h3 id="page-title"></h3>
+
+          <div class="content-block">
+            <h4>Primary Text</h4>
+            <p id="text-primary"></p>
+          </div>
+
+          <div class="content-block">
+            <h4>Secondary Text</h4>
+            <p id="text-secondary"></p>
+          </div>
+
+          <div class="content-block">
+            <h4>Primary Audio</h4>
+            <div id="audio-primary-wrap"></div>
+          </div>
+
+          <div class="content-block">
+            <h4>Secondary Audio</h4>
+            <div id="audio-secondary-wrap"></div>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <script src="/viewer/app.js" defer></script>
+  </body>
+</html>
