@@ -1,0 +1,21 @@
+Write a creative fairy tale for a child named **{child_name}**.
+
+**Configuration:**
+- **Primary Language (Child's Context):** {primary_lang}
+- **Secondary Language (Parent's Heritage):** {secondary_lang}
+- **Theme:** {theme}
+- **Additional Request:** {extra_prompt}
+
+**Constraints:**
+1. **Length:** EXACTLY 32 pages interaction.
+2. **Word Count:** Total 400-500 words. Keep it short per page.
+3. **Format:** Output MUST strictly follow the JSON schema provided.
+4. **Content:**
+   - Page 1: Introduction.
+   - Page 15-16: Climax or turning point.
+   - Page 32: Heartwarming conclusion.
+   - Include lively *sound words* in the text.
+5. **Visuals:**
+   - Define a consistent `image_style` (e.g., "Warm, textured digital illustration").
+   - Define a `main_character_design` based on the child's name and age (e.g., "A cute [Nationality] child...").
+   - **Crucial:** Every `illustration_prompt` must start with: "{{image_style}}. {{main_character_design}} is [action]..." to ensure consistency.
