@@ -3,6 +3,10 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 from models.story_model import Story
+from prompts.illustration_prompt_utils import (
+    build_illustration_prefix,
+    split_scene_prompt,
+)
 from prompts.story_prompts import StoryPrompt
 from typing import Optional
 
@@ -51,10 +55,34 @@ class StoryGenerator:
             )
             
             if response.parsed:
-                return response.parsed
+                story = response.parsed
             else:
-                return Story.model_validate_json(response.text)
+                story = Story.model_validate_json(response.text)
+
+            self._populate_illustration_fields(story)
+            return story
 
         except Exception as e:
             print(f"Error generating story: {e}")
             raise
+
+    @staticmethod
+    def _populate_illustration_fields(story: Story) -> None:
+        illustration_prefix = build_illustration_prefix(
+            story.image_style, story.main_character_design
+        )
+        story.illustration_prefix = illustration_prefix
+
+        for page in story.pages:
+            scene, method = split_scene_prompt(
+                illustration_prefix=illustration_prefix,
+                main_character_design=story.main_character_design,
+                full_prompt=page.illustration_prompt,
+            )
+            page.illustration_scene_prompt = scene
+
+            if method == "fallback":
+                print(
+                    "[warn] Could not split illustration_prompt into scene prompt; "
+                    f"page={page.page_number} method={method}"
+                )

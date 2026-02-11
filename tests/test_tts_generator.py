@@ -4,7 +4,11 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from generators.tts_generator import TTSGenerator, convert_to_wav, parse_audio_mime_type
+from generators.tts.tts_generator import (
+    TTSGenerator,
+    convert_to_wav,
+    parse_audio_mime_type,
+)
 
 
 def _make_chunk(data: bytes, mime_type: str):
@@ -78,7 +82,7 @@ class TestTTSGenerator(unittest.TestCase):
                 "_stream_audio_bytes",
                 return_value=(b"\x00\x01" * 100, "audio/L16;rate=24000"),
             ):
-                with patch("generators.tts_generator.time.sleep"):
+                with patch("generators.tts.tts_generator.time.sleep"):
                     result = generator.generate_book_audio(
                         story=story,
                         output_dir=tmp_dir,
@@ -98,8 +102,8 @@ class TestTTSGenerator(unittest.TestCase):
         generator = TTSGenerator(api_key="dummy", request_interval_sec=10.0, client=client)
         generator._last_request_time = 10.0
 
-        with patch("generators.tts_generator.time.monotonic", return_value=13.0):
-            with patch("generators.tts_generator.time.sleep") as mocked_sleep:
+        with patch("generators.tts.tts_generator.time.monotonic", return_value=13.0):
+            with patch("generators.tts.tts_generator.time.sleep") as mocked_sleep:
                 generator._enforce_rate_limit()
 
         mocked_sleep.assert_called_once_with(7.0)
@@ -123,7 +127,7 @@ class TestTTSGenerator(unittest.TestCase):
                     (b"\x00\x01" * 100, "audio/L16;rate=24000"),
                 ],
             ) as mocked_stream:
-                with patch("generators.tts_generator.time.sleep"):
+                with patch("generators.tts.tts_generator.time.sleep"):
                     result = generator.generate_book_audio(
                         story=story,
                         output_dir=tmp_dir,
@@ -167,7 +171,7 @@ class TestTTSGenerator(unittest.TestCase):
                 "_stream_audio_bytes",
                 return_value=(b"\x00\x01" * 100, "audio/L16;rate=24000"),
             ):
-                with patch("generators.tts_generator.time.sleep"):
+                with patch("generators.tts.tts_generator.time.sleep"):
                     result = generator.generate_book_audio(
                         story=story,
                         output_dir=tmp_dir,

@@ -4,15 +4,15 @@ from typing import Callable
 from google import genai
 from google.genai import types
 
-from generators.tts_audio import (
+from .tts_audio import (
     convert_to_wav,
     normalize_to_wav_bytes,
     parse_audio_mime_type,
 )
-from generators.tts_pipeline import generate_book_audio_pipeline
-from generators.tts_runtime import TTSRuntime
-from generators.tts_stream import stream_audio_bytes
-from generators.tts_text import build_tts_prompt
+from .tts_pipeline import generate_book_audio_pipeline
+from .tts_runtime import TTSRuntime
+from .tts_stream import stream_audio_bytes
+from .tts_text import build_tts_prompt
 
 
 class TTSGenerator:
