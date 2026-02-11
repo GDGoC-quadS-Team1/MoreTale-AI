@@ -1,146 +1,64 @@
-
 import unittest
 
-
-from models.story_model import Story, Page
-
+from models.story_model import Page, Story
 
 
 class TestStoryValidation(unittest.TestCase):
-
-
     def setUp(self):
-
-
-        # Create a valid page template
-
-
         self.valid_page = Page(
-
-
             page_number=1,
-
-
-            text_primary="Test",
-
-
-            text_secondary="Test",
-
-
+            text_primary="Test primary",
+            text_secondary="Test secondary",
             illustration_prompt="Test illustration",
-
-
-            sound_effects=["Bang"]
-
         )
-
-
 
     def test_valid_story_creation(self):
-
-
-        """Test that a story with exactly 32 pages is valid."""
-        
-
         story = Story(
-
             title_primary="Test Title",
-
             title_secondary="Test Title 2",
-
             author_name="AI",
+            primary_language="Korean",
+            secondary_language="English",
             image_style="Watercolor",
-
             main_character_design="Boy",
-
-            pages=[self.valid_page.model_copy(update={'page_number': i+1}) for i in range(32)]
-
+            pages=[self.valid_page.model_copy(update={"page_number": i + 1}) for i in range(24)],
         )
-
-        jls_extract_var = self
-        jls_extract_var.assertEqual(len(story.pages), 32)
-
-
+        self.assertEqual(len(story.pages), 24)
 
     def test_invalid_page_count_low(self):
-
-
-        """Test that a story with fewer than 32 pages raises a ValueError."""
-
-
-        pages = [self.valid_page.model_copy(update={'page_number': i+1}) for i in range(31)]
-        
-
+        pages = [self.valid_page.model_copy(update={"page_number": i + 1}) for i in range(23)]
 
         with self.assertRaises(ValueError) as context:
-
-
             Story(
-
-
                 title_primary="Test Title",
-
-
                 title_secondary="Test Title 2",
-
-
                 author_name="AI",
-
-
+                primary_language="Korean",
+                secondary_language="English",
                 image_style="Watercolor",
-
-
                 main_character_design="Boy",
-                pages=pages
-
+                pages=pages,
             )
 
-
-        self.assertIn("Story must have exactly 32 pages", str(context.exception))
-
-
+        self.assertIn("Story must have exactly 24 pages", str(context.exception))
 
     def test_invalid_page_count_high(self):
-
-
-        """Test that a story with more than 32 pages raises a ValueError."""
-
-
-        pages = [self.valid_page.model_copy(update={'page_number': i+1}) for i in range(33)]
-        
-
+        pages = [self.valid_page.model_copy(update={"page_number": i + 1}) for i in range(25)]
 
         with self.assertRaises(ValueError) as context:
-
-
             Story(
-
-
                 title_primary="Test Title",
-
-
                 title_secondary="Test Title 2",
-
-
                 author_name="AI",
-
-
+                primary_language="Korean",
+                secondary_language="English",
                 image_style="Watercolor",
-
-
                 main_character_design="Boy",
-                pages=pages
-
+                pages=pages,
             )
 
-
-        self.assertIn("Story must have exactly 32 pages", str(context.exception))
-
+        self.assertIn("Story must have exactly 24 pages", str(context.exception))
 
 
-if __name__ == '__main__':
-
-
+if __name__ == "__main__":
     unittest.main()
-
-

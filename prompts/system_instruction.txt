@@ -4,7 +4,8 @@ Write a warm, engaging story that supports cultural pride and emotional intellig
 
 MUST follow these output rules:
 - Output ONLY valid JSON that matches the provided response schema. No Markdown, no extra commentary.
-- Produce exactly 32 pages with page_number 1..32 in order.
+- Produce exactly 24 pages with page_number 1..24 in order.
+- Set `primary_language` and `secondary_language` to match the user inputs exactly.
 - Provide `image_style` and `main_character_design` at the story level.
 - Every page's `illustration_prompt` MUST include the full `main_character_design` text verbatim for visual consistency.
 - `text_primary` is in the user's primary language and `text_secondary` is in the user's secondary language.

@@ -70,7 +70,7 @@ Offer both versions:
     - Uses knowledge from BOTH cultures to solve the problem
     - Shows emotional growth
   
-  - **Resolution (Pages 21-32)**: Problem solved, with clear growth or learning demonstrated
+  - **Resolution (Pages 17-24)**: Problem solved, with clear growth or learning demonstrated
     - Character reflects on what they learned
     - Celebrates with family/community
     - Hints at future confidence or skills
@@ -272,7 +272,7 @@ Offer both versions:
 
 ---
 
-### **STORY STRUCTURE TEMPLATE (32 pages)**
+### **STORY STRUCTURE TEMPLATE (24 pages)**
 
 **Pages 1-4: Introduction & Problem Setup**
 - Page 1: Introduce main character in their daily life
@@ -287,55 +287,55 @@ Offer both versions:
   - Something goes wrong, or character wants something they don't have
   - Problem should be emotionally resonant (loneliness, fear, loss, desire to help)
 
-**Pages 5-12: Rising Action & Attempts**
-- Pages 5-7: Character takes action to address the problem
+**Pages 5-10: Rising Action & Attempts**
+- Pages 5-6: Character takes action to address the problem
   - First attempt (usually doesn't fully work)
   - Encounters obstacles (age-appropriate: things are harder than expected, feelings get hurt, weather changes)
   
-- Pages 8-10: Cultural elements provide clues or tools
+- Pages 7-8: Cultural elements provide clues or tools
   - Character remembers something from Culture A
   - Tries to apply it, but needs something more
   
-- Pages 11-12: Growing frustration or setback
+- Pages 9-10: Growing frustration or setback
   - Things seem worse, not better
   - Character feels discouraged but doesn't give up
 
-**Pages 13-20: Climax & Cultural Integration**
-- Pages 13-15: New insight from Culture B
+**Pages 11-16: Climax & Cultural Integration**
+- Pages 11-12: New insight from Culture B
   - Character remembers a story, tradition, or wisdom from other culture
   - Realizes the two cultures can work together
   
-- Pages 16-18: Character uses knowledge from BOTH cultures to solve problem
+- Pages 13-14: Character uses knowledge from BOTH cultures to solve problem
   - Specific example: Uses Korean concept of "jeong" (deep care) + Vietnamese "hiếu" (filial piety) to understand how to help grandmother
   - Moment of realization: "I can use both!"
   
-- Pages 19-20: Brave decision and action
+- Pages 15-16: Brave decision and action
   - Character takes the risk
   - Show cultural pride/appreciation: "I'm so glad I know both ways"
 
-**Pages 21-28: Falling Action & Celebration**
-- Pages 21-23: Problem resolves
+**Pages 17-21: Falling Action & Celebration**
+- Pages 17-18: Problem resolves
   - Success! But show effort, not magic
   - Character sees result of their actions
   
-- Pages 24-26: Character shares experience with family/friends
+- Pages 19-20: Character shares experience with family/friends
   - Teaches others what they learned
   - Family/community responds with pride and support
   
-- Pages 27-28: Celebration incorporating both cultures
+- Page 21: Celebration incorporating both cultures
   - Specific example: Celebration meal with both Korean and Vietnamese dishes
   - Everyone participates, showing unity
 
-**Pages 29-32: Resolution & Reflection**
-- Page 29: Character reflects on what they learned
+**Pages 22-24: Resolution & Reflection**
+- Page 22: Character reflects on what they learned
   - Internal thought: "I learned that..."
   - Emotional growth visible
   
-- Page 30-31: Show how character has changed
+- Page 23: Show how character has changed
   - Doing something they couldn't do at the beginning
   - More confident, skilled, or understanding
   
-- Page 32: End on warm, affirming note
+- Page 24: End on warm, affirming note
   - Hint at growth or future adventures: "And tomorrow, there will be new adventures..."
   - Character sleeping peacefully, or looking at stars, or hugging family
   - Final message: Both cultures make you stronger
@@ -381,7 +381,7 @@ Before finalizing a story, verify:
 - [ ] Is the problem age-appropriate (not too scary or complex)?
 - [ ] Can a 3-7 year old understand the solution?
 - [ ] Is the vocabulary challenging but not frustrating?
-- [ ] Would this story hold a child's attention for 32 pages?
+- [ ] Would this story hold a child's attention for 24 pages?
 
 ---
 
@@ -472,7 +472,7 @@ Before finalizing a story, verify:
 5. **Output format:**
    - Use JSON structure with all required fields
    - Ensure UTF-8 encoding for special characters
-   - Include all 32 pages consistently formatted
+   - Include all 24 pages consistently formatted
    - Proofread for typos in both languages
 
 ---

@@ -11,6 +11,8 @@ Inputs:
 Instructions:
 - If the theme is blank, choose a fresh, age-appropriate theme and a clear problem to solve.
 - If the age is blank/unknown, assume age 5.
+- Produce exactly 24 pages.
+- Set `primary_language` and `secondary_language` fields to match the input language names exactly.
 - Keep each page short and engaging for young children.
 - Use both languages on every page.
 
