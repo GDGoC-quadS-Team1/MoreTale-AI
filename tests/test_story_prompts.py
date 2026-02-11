@@ -25,6 +25,13 @@ class TestStoryPrompt(unittest.TestCase):
         self.assertIn("Friendship", user_prompt)
         self.assertIn("Include a dragon.", user_prompt)
 
+    def test_can_include_style_guide_in_system_instruction(self):
+        prompt = StoryPrompt(include_style_guide=True)
+
+        system_instruction = prompt.system_instruction
+
+        self.assertIn("CHARACTER NAMING STRATEGY", system_instruction)
+
     def test_missing_system_instruction_file_raises(self):
         prompt = StoryPrompt(system_instruction_path="prompts/not_exists.txt")
 

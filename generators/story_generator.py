@@ -4,23 +4,39 @@ from google.genai import types
 from dotenv import load_dotenv
 from models.story_model import Story
 from prompts.story_prompts import StoryPrompt
+from typing import Optional
 
 load_dotenv()
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 class StoryGenerator:
-    def __init__(self, model_name: str = "gemini-2.5-flash"):
+    def __init__(self, model_name: str = "gemini-2.5-flash", include_style_guide: bool = False):
         if not gemini_api_key:
             raise ValueError("GEMINI_API_KEY environment variable not set.")
         self.client = genai.Client(api_key=gemini_api_key)
         self.model_name = model_name
-        self.prompts = StoryPrompt()
+        self.prompts = StoryPrompt(include_style_guide=include_style_guide)
 
-    def generate_story(self, child_name: str, primary_lang: str, secondary_lang: str, theme: str, extra_prompt: str = "") -> Story:
+    def generate_story(
+        self,
+        child_name: str,
+        primary_lang: str,
+        secondary_lang: str,
+        theme: str,
+        extra_prompt: str = "",
+        child_age: Optional[int] = None,
+    ) -> Story:
         """
         Generates a bilingual fairy tale using the Gemini API.
         """
-        user_prompt = self.prompts.generate_user_prompt(child_name, primary_lang, secondary_lang, theme, extra_prompt)
+        user_prompt = self.prompts.generate_user_prompt(
+            child_name=child_name,
+            child_age=child_age,
+            primary_lang=primary_lang,
+            secondary_lang=secondary_lang,
+            theme=theme,
+            extra_prompt=extra_prompt,
+        )
         
         try:
             response = self.client.models.generate_content(

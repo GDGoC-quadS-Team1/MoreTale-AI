@@ -1,7 +1,7 @@
 # MoreTale-AI
 
 Gemini API를 사용해 **이중언어 동화(JSON)**를 생성하는 프로젝트입니다.  
-아동 이름, 주 언어/보조 언어, 테마를 입력하면 32페이지 구조의 동화를 생성해 `outputs/`에 저장합니다.
+아동 이름, 주 언어/보조 언어(그리고 선택적으로 테마)를 입력하면 32페이지 구조의 동화를 생성해 `outputs/`에 저장합니다.
 
 ## 구현된 기능
 
@@ -14,6 +14,7 @@ Gemini API를 사용해 **이중언어 동화(JSON)**를 생성하는 프로젝�
 - 프롬프트 로더
   - `prompts/system_instruction.txt`
   - `prompts/user_prompt.txt`
+  - (선택) `prompts/style_guide.txt` (`--include_style_guide`)
   - 템플릿 placeholder 오류 감지
 - 단위 테스트
   - 모델 검증 테스트
@@ -31,7 +32,9 @@ MoreTale-AI/
 ├── prompts/
 │   ├── story_prompts.py
 │   ├── system_instruction.txt
-│   └── user_prompt.txt
+│   ├── user_prompt.txt
+│   ├── style_guide.txt
+│   └── legacy/
 ├── tests/
 │   ├── test_story_model.py
 │   └── test_story_prompts.py
@@ -69,10 +72,12 @@ GEMINI_API_KEY=YOUR_API_KEY
 ```bash
 python main.py \
   --child_name "Mina" \
+  --child_age 5 \
   --primary_lang "Korean" \
   --secondary_lang "English" \
   --theme "Friendship" \
   --extra_prompt "Include a dragon" \
+  --include_style_guide \
   --model_name "gemini-2.5-flash"
 ```
 
@@ -85,10 +90,12 @@ outputs/{timestamp}_story_{slug}/story_{model_name}.json
 ## CLI 옵션
 
 - `--child_name` (필수): 아이 이름
+- `--child_age` (선택): 아이 나이(권장)
 - `--primary_lang` (필수): 주 언어
 - `--secondary_lang` (필수): 보조 언어
-- `--theme` (필수): 동화 테마
+- `--theme` (선택): 동화 테마 (생략 시 자동 생성)
 - `--extra_prompt` (선택): 추가 요청사항
+- `--include_style_guide` (선택): `prompts/style_guide.txt`를 system instruction에 포함
 - `--model_name` (선택, 기본값 `gemini-2.5-flash`): 사용할 Gemini 모델
 
 ## 출력 JSON 개요

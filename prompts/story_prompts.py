@@ -11,6 +11,10 @@ class StoryPrompt:
     user_prompt_path: str = field(
         default_factory=lambda: str(Path(__file__).resolve().parent / "user_prompt.txt")
     )
+    style_guide_path: str = field(
+        default_factory=lambda: str(Path(__file__).resolve().parent / "style_guide.txt")
+    )
+    include_style_guide: bool = False
 
     _system_instruction: Optional[str] = field(init=False, repr=False, default=None)
     _user_prompt_template: Optional[str] = field(init=False, repr=False, default=None)
@@ -26,9 +30,13 @@ class StoryPrompt:
     @property
     def system_instruction(self) -> str:
         if self._system_instruction is None:
-            self._system_instruction = self._read_text(
-                self.system_instruction_path, "System instruction"
-            )
+            system_instruction = self._read_text(self.system_instruction_path, "System instruction")
+
+            if self.include_style_guide:
+                style_guide = self._read_text(self.style_guide_path, "Style guide")
+                system_instruction = f"{system_instruction}\n\n---\n\n{style_guide}"
+
+            self._system_instruction = system_instruction
         return self._system_instruction
 
     def generate_user_prompt(
@@ -38,18 +46,22 @@ class StoryPrompt:
         secondary_lang: str,
         theme: str,
         extra_prompt: str = "",
+        child_age: Optional[int] = None,
     ) -> str:
         if self._user_prompt_template is None:
             self._user_prompt_template = self._read_text(
                 self.user_prompt_path, "User prompt"
             )
 
+        child_age_text = "" if child_age is None else str(child_age)
+
         try:
             return self._user_prompt_template.format(
                 child_name=child_name,
+                child_age=child_age_text,
                 primary_lang=primary_lang,
                 secondary_lang=secondary_lang,
-                theme=theme,
+                theme="" if theme is None else theme,
                 extra_prompt=extra_prompt,
             )
         except KeyError as exc:
