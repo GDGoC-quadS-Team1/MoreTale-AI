@@ -1,6 +1,6 @@
 import unittest
 
-from generators.illustration_prompt_utils import (
+from prompts.illustration_prompt_utils import (
     build_illustration_prefix,
     split_scene_prompt,
 )
@@ -45,4 +45,3 @@ class TestIllustrationPromptUtils(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

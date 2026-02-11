@@ -3,7 +3,7 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 from models.story_model import Story
-from generators.illustration_prompt_utils import (
+from prompts.illustration_prompt_utils import (
     build_illustration_prefix,
     split_scene_prompt,
 )
