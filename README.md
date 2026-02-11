@@ -40,6 +40,7 @@ MoreTale-AI/
 ```
 
 `generators/` 내부 상세 역할은 `generators/README.md`를 참고하세요.
+브랜치 운영 정책은 `BRANCHING.md`를 참고하세요.
 
 ## 빠른 시작
 
