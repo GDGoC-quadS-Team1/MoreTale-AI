@@ -2,4 +2,8 @@
 /.moretale
 __pycache__/
 *.pyc
-outputs/
+/outputs/*
+!/outputs/viewer/
+!/outputs/viewer/**
+/outputs/viewer/**/__pycache__/
+/outputs/viewer/**/*.pyc
