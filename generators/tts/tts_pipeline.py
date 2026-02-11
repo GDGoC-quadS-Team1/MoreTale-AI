@@ -1,8 +1,8 @@
 import os
 from typing import Callable
 
-from generators.tts_manifest import build_manifest_entry, write_tts_manifest
-from generators.tts_text import slugify_language_name
+from .tts_manifest import build_manifest_entry, write_tts_manifest
+from .tts_text import slugify_language_name
 
 
 def _build_language_specs(

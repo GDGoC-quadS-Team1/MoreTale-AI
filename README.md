@@ -16,14 +16,18 @@ MoreTale-AI/
 ├── main.py
 ├── generators/
 │   ├── README.md
-│   ├── story_generator.py
-│   ├── tts_generator.py
-│   ├── tts_pipeline.py
-│   ├── tts_runtime.py
-│   ├── tts_stream.py
-│   ├── tts_audio.py
-│   ├── tts_text.py
-│   └── tts_manifest.py
+│   ├── story/
+│   │   └── story_generator.py
+│   ├── tts/
+│   │   ├── tts_generator.py
+│   │   ├── tts_pipeline.py
+│   │   ├── tts_runtime.py
+│   │   ├── tts_stream.py
+│   │   ├── tts_audio.py
+│   │   ├── tts_text.py
+│   │   └── tts_manifest.py
+│   └── illustration/
+│       └── illustration_generator.py
 ├── models/
 │   └── story_model.py
 ├── prompts/
@@ -136,11 +140,13 @@ outputs/{timestamp}_story_{slug}/audio/manifest.json
 - `secondary_language`
 - `image_style`
 - `main_character_design`
+- `illustration_prefix` (선택): `{image_style}, {main_character_design}` 형태의 전역 prefix (코드에서 자동 채움)
 - `pages` (정확히 24개)
   - `page_number`
   - `text_primary`
   - `text_secondary`
   - `illustration_prompt`
+  - `illustration_scene_prompt` (선택): `illustration_prompt`에서 prefix/design를 제거한 페이지별 장면 묘사 (코드에서 자동 채움)
 
 ## 테스트
 
@@ -153,7 +159,7 @@ python -m unittest discover -s tests -v
 - `GEMINI_TTS_API_KEY environment variable not set.`
   - `--enable_tts` 사용 시 `.env`에 `GEMINI_TTS_API_KEY` 설정 필요
 - `GEMINI_API_KEY environment variable not set.`
-  - 현재 `story_generator.py`의 에러 문구는 `GEMINI_API_KEY`로 표시되지만,
+  - 현재 `generators/story/story_generator.py`의 에러 문구는 `GEMINI_API_KEY`로 표시되지만,
     실제로는 `.env`의 `GEMINI_STORY_API_KEY`가 필요합니다.
 - `ModuleNotFoundError`
   - 가상환경 활성화 확인

@@ -6,6 +6,14 @@ class Page(BaseModel):
     text_primary: str = Field(..., description="Story text in the primary language (Child's context)")
     text_secondary: str = Field(..., description="Story text in the secondary language (Parent's context)")
     illustration_prompt: str = Field(..., description="Detailed description for an AI image generator. MUST include the character's visual features defined in the Story class.")
+    illustration_scene_prompt: str | None = Field(
+        default=None,
+        description=(
+            "Page-specific scene description derived from illustration_prompt after removing "
+            "the global illustration_prefix/main_character_design. Intended for reuse with a "
+            "shared prefix when generating images."
+        ),
+    )
 
 class Story(BaseModel):
     title_primary: str = Field(..., description="Title in primary language")
@@ -17,6 +25,14 @@ class Story(BaseModel):
     # New fields for Image Consistency
     image_style: str = Field(..., description="The consistent art style for the entire book (e.g., 'Soft watercolor', 'Vibrant digital art').")
     main_character_design: str = Field(..., description="Physical description of the main character (e.g., 'A 5-year-old Korean boy with short black hair, wearing a red t-shirt'). This MUST be used in every page's illustration prompt.")
+    illustration_prefix: str | None = Field(
+        default=None,
+        description=(
+            "Global illustration prefix composed from image_style and main_character_design "
+            "(e.g., '{image_style}, {main_character_design}'). This may be populated by the "
+            "application for reuse across pages."
+        ),
+    )
     
     pages: List[Page] = Field(..., description="List of exactly 24 pages")
 

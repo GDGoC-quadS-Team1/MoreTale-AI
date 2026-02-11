@@ -1,5 +1,5 @@
-from generators.story_generator import StoryGenerator
-from generators.tts_generator import TTSGenerator
+from generators.story.story_generator import StoryGenerator
+from generators.tts.tts_generator import TTSGenerator
 from models.story_model import Story
 import sys
 import os

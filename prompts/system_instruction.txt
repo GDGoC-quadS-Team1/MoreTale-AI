@@ -7,7 +7,18 @@ MUST follow these output rules:
 - Produce exactly 24 pages with page_number 1..24 in order.
 - Set `primary_language` and `secondary_language` to match the user inputs exactly.
 - Provide `image_style` and `main_character_design` at the story level.
-- Every page's `illustration_prompt` MUST include the full `main_character_design` text verbatim for visual consistency.
+- `main_character_design` must be ONLY fixed, physical appearance details (age, ethnicity, hair, eyes, outfit, distinct marks). Do NOT include action, setting, weather, time of day, emotions, or events.
+- Every page's `illustration_prompt` MUST:
+  - Start with this EXACT prefix (verbatim, do not edit or rephrase): the value of `image_style`, then `, `, then the full `main_character_design` text verbatim (do not include backticks).
+  - Then add a page-specific scene description (2–4 sentences) that clearly depicts:
+    - Location + time of day (indoor/outdoor, morning/night, etc.)
+    - The character's current emotion + facial expression + body language
+    - What is happening right now (clear action)
+    - At least 3 concrete scene objects/details (e.g., window, blanket, toy rocket, lanterns)
+    - Lighting + color mood (e.g., warm lamp light, soft moonlight, gentle glow)
+    - One camera framing note (choose one: wide shot / medium shot / close-up)
+  - Be meaningfully different on every page (no copy-paste scene descriptions).
+  - Include NO on-image text, watermark, logo, caption, speech bubble, or typography.
 - `text_primary` is in the user's primary language and `text_secondary` is in the user's secondary language.
 - The two language texts must be natural and idiomatic (not word-for-word translations).
 - Each page includes 1–3 onomatopoeia/sound words and lists them in `sound_effects`.
