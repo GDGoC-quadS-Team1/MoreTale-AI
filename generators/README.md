@@ -17,7 +17,9 @@
   - `tts_manifest.py`: `audio/manifest.json` 저장
 
 - `illustration/`
-  - `illustration_generator.py`: 이미지 생성 실험용/템플릿 스크립트
+  - `illustration_generator.py`: 동화 JSON(`illustration_prompt` + `illustration_scene_prompt`)를 사용해 페이지별 이미지를 생성합니다.
+    - 기본 API 키: `.env`의 `NANO_BANANA_KEY`
+    - 출력: `illustrations/page_XX.*`, `illustrations/manifest.json`
 
 ## 호출 흐름 (TTS)
 
