@@ -13,6 +13,7 @@ OUTPUTS_DIR = VIEWER_DIR.parent
 RUN_GLOB = "*_story_*"
 STORY_GLOB = "story_*.json"
 RUN_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
+PAGE_ASSET_PATTERN = re.compile(r"^page_(\d+)\.[^.]+$")
 
 
 def slugify_language_name(text: str) -> str:
@@ -23,6 +24,95 @@ def slugify_language_name(text: str) -> str:
 def load_json(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as file:
         return json.load(file)
+
+
+def to_outputs_url(path: Path) -> str | None:
+    try:
+        rel_path = path.resolve().relative_to(OUTPUTS_DIR.resolve())
+    except Exception:
+        return None
+    return f"/{rel_path.as_posix()}"
+
+
+def resolve_manifest_asset_path(run_dir: Path, raw_path: str) -> Path | None:
+    normalized = (raw_path or "").strip().replace("\\", "/")
+    if not normalized:
+        return None
+
+    candidate = Path(normalized)
+    candidates: list[Path] = []
+
+    if candidate.is_absolute():
+        candidates.append(candidate)
+    else:
+        candidates.append(run_dir / candidate)
+        candidates.append(OUTPUTS_DIR / candidate)
+        if candidate.parts and candidate.parts[0] == OUTPUTS_DIR.name:
+            candidates.append(OUTPUTS_DIR.parent / candidate)
+
+    for path in candidates:
+        if path.exists() and path.is_file():
+            return path
+    return None
+
+
+def load_illustration_url_map(run_dir: Path) -> dict[int, str]:
+    illustrations_dir = run_dir / "illustrations"
+    if not illustrations_dir.is_dir():
+        return {}
+
+    url_map: dict[int, str] = {}
+    manifest_path = illustrations_dir / "manifest.json"
+    if manifest_path.is_file():
+        try:
+            manifest = load_json(manifest_path)
+            entries = manifest.get("entries")
+            if isinstance(entries, list):
+                for entry in entries:
+                    if not isinstance(entry, dict):
+                        continue
+
+                    raw_page_number = entry.get("page_number")
+                    raw_path = entry.get("path")
+                    if raw_page_number is None or raw_path is None:
+                        continue
+
+                    try:
+                        page_number = int(raw_page_number)
+                    except (TypeError, ValueError):
+                        continue
+
+                    resolved_path = resolve_manifest_asset_path(
+                        run_dir=run_dir,
+                        raw_path=str(raw_path),
+                    )
+                    if resolved_path is None:
+                        continue
+
+                    illustration_url = to_outputs_url(resolved_path)
+                    if illustration_url:
+                        url_map[page_number] = illustration_url
+        except Exception:
+            # Fall back to file scan if manifest parsing fails.
+            pass
+
+    for file_path in sorted(illustrations_dir.glob("page_*.*")):
+        if not file_path.is_file() or file_path.stat().st_size <= 0:
+            continue
+
+        match = PAGE_ASSET_PATTERN.fullmatch(file_path.name)
+        if not match:
+            continue
+
+        page_number = int(match.group(1))
+        if page_number in url_map:
+            continue
+
+        illustration_url = to_outputs_url(file_path)
+        if illustration_url:
+            url_map[page_number] = illustration_url
+
+    return url_map
 
 
 def iter_runs() -> list[dict]:
@@ -53,6 +143,10 @@ def iter_runs() -> list[dict]:
 
         audio_root = run_dir / "audio"
         has_any_audio = audio_root.exists() and any(audio_root.rglob("*.wav"))
+        illustration_root = run_dir / "illustrations"
+        has_any_illustration = illustration_root.exists() and any(
+            illustration_root.glob("page_*.*")
+        )
         updated_at = datetime.fromtimestamp(run_dir.stat().st_mtime).isoformat(
             timespec="seconds"
         )
@@ -65,6 +159,7 @@ def iter_runs() -> list[dict]:
                 "title_secondary": title_secondary,
                 "page_count": page_count,
                 "has_any_audio": has_any_audio,
+                "has_any_illustration": has_any_illustration,
                 "updated_at": updated_at,
             }
         )
@@ -106,6 +201,7 @@ def build_book_payload(run_id: str) -> dict:
     secondary_language = str(story.get("secondary_language", ""))
     primary_slug = slugify_language_name(primary_language)
     secondary_slug = slugify_language_name(secondary_language)
+    illustration_urls = load_illustration_url_map(run_dir=run_dir)
 
     payload_pages: list[dict] = []
     for index, page in enumerate(pages):
@@ -130,12 +226,19 @@ def build_book_payload(run_id: str) -> dict:
 
         has_primary_audio = primary_file.exists() and primary_file.is_file()
         has_secondary_audio = secondary_file.exists() and secondary_file.is_file()
+        illustration_url = illustration_urls.get(page_number)
 
         payload_pages.append(
             {
                 "page_number": page_number,
                 "text_primary": str(page.get("text_primary", "")),
                 "text_secondary": str(page.get("text_secondary", "")),
+                "illustration_url": illustration_url,
+                "has_illustration": bool(illustration_url),
+                "illustration_prompt": str(page.get("illustration_prompt", "")),
+                "illustration_scene_prompt": str(
+                    page.get("illustration_scene_prompt", "")
+                ),
                 "audio_primary_url": f"/{primary_rel}" if has_primary_audio else None,
                 "audio_secondary_url": (
                     f"/{secondary_rel}" if has_secondary_audio else None
