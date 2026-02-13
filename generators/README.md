@@ -28,9 +28,9 @@
 ## Import 호환성
 
 - 내부 구현의 canonical import는 `generators/*`를 사용합니다.
-- 하위 호환을 위해 `models/story_model.py`, `prompts/story_prompts.py`,
+- 하위 호환을 위해 `prompts/story_prompts.py`,
   `prompts/illustration_prompt_utils.py`는 re-export shim으로 유지됩니다.
-- deprecation 경고 없이 legacy/new 경로를 모두 지원합니다.
+- 모델 스키마는 `generators.story.story_model` 경로만 지원합니다.
 
 ## 호출 흐름 (TTS)
 
