@@ -1,6 +1,6 @@
 import unittest
 
-from prompts.illustration_prompt_utils import (
+from generators.illustration.illustration_prompt_utils import (
     build_illustration_prefix,
     split_scene_prompt,
 )

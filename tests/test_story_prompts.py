@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from prompts.story_prompts import StoryPrompt
+from generators.story.story_prompts import StoryPrompt
 
 
 class TestStoryPrompt(unittest.TestCase):

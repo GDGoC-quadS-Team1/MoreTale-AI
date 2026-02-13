@@ -28,8 +28,7 @@
 ## Import 호환성
 
 - 내부 구현의 canonical import는 `generators/*`를 사용합니다.
-- 하위 호환을 위해 `prompts/story_prompts.py`,
-  `prompts/illustration_prompt_utils.py`는 re-export shim으로 유지됩니다.
+- `prompts/`는 텍스트 리소스(`*.txt`) 전용이며 파이썬 모듈은 제공하지 않습니다.
 - 모델 스키마는 `generators.story.story_model` 경로만 지원합니다.
 
 ## 호출 흐름 (TTS)
