@@ -1,5 +1,6 @@
 from generators.story.story_generator import StoryGenerator
 from generators.tts.tts_generator import TTSGenerator
+from generators.illustration.illustration_pipeline import IllustrationGenerator
 import sys
 import os
 import datetime
@@ -62,6 +63,32 @@ def main():
         type=float,
         default=10.0,
         help="Seconds between TTS requests to respect RPM limits.",
+    )
+    parser.add_argument(
+        "--enable_illustration",
+        action="store_true",
+        help="Generate page-level illustrations from the generated story JSON.",
+    )
+    parser.add_argument(
+        "--illustration_model",
+        default="gemini-2.5-flash-image",
+        help="Gemini image model name to use when --enable_illustration is set.",
+    )
+    parser.add_argument(
+        "--illustration_aspect_ratio",
+        default="16:9",
+        help="Illustration aspect ratio when --enable_illustration is set (e.g. 16:9, 1:1, 3:4).",
+    )
+    parser.add_argument(
+        "--illustration_request_interval_sec",
+        type=float,
+        default=1.0,
+        help="Seconds between image requests when --enable_illustration is set.",
+    )
+    parser.add_argument(
+        "--illustration_skip_existing",
+        action="store_true",
+        help="Skip pages if page_XX.* already exists when --enable_illustration is set.",
     )
     
     args = parser.parse_args()
@@ -136,9 +163,45 @@ def main():
             if tts_result["failed"] > 0:
                 failures = "\n".join(tts_result["failures"])
                 raise RuntimeError(f"TTS generation failed.\n{failures}")
+
+        if args.enable_illustration:
+            illustration_api_key = os.getenv("NANO_BANANA_KEY")
+            if not illustration_api_key:
+                raise ValueError(
+                    "NANO_BANANA_KEY environment variable not set. "
+                    "Story JSON was generated, but illustration requires this key."
+                )
+
+            print("Generating page illustrations...")
+            illustration_generator = IllustrationGenerator(
+                api_key=illustration_api_key,
+                model_name=args.illustration_model,
+                aspect_ratio=args.illustration_aspect_ratio,
+                request_interval_sec=args.illustration_request_interval_sec,
+            )
+            illustration_result = illustration_generator.generate_from_story(
+                story=story,
+                output_dir=output_dir,
+                skip_existing=args.illustration_skip_existing,
+            )
+
+            print(
+                "Illustration summary: "
+                f"total={illustration_result['total_tasks']} "
+                f"generated={illustration_result['generated']} "
+                f"skipped={illustration_result['skipped']} "
+                f"failed={illustration_result['failed']} "
+                f"manifest={illustration_result['manifest_path']}"
+            )
+
+            if illustration_result["failed"] > 0:
+                raise RuntimeError(
+                    "Illustration generation failed. "
+                    f"See manifest: {illustration_result['manifest_path']}"
+                )
         
     except Exception as e:
-        print(f"Failed to generate story: {e}")
+        print(f"Pipeline failed: {e}")
         # Print full traceback for debugging
         import traceback
         traceback.print_exc()

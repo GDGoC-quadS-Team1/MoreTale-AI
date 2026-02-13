@@ -1,12 +1,13 @@
 # MoreTale-AI
 
-Gemini API를 사용해 **이중언어 동화(JSON)**를 생성하고, 선택적으로 **페이지 단위 TTS 오디오북(WAV)**까지 만드는 프로젝트입니다.
+Gemini API를 사용해 **이중언어 동화(JSON)**를 생성하고, 선택적으로 **페이지 단위 TTS 오디오북(WAV)**, **일러스트 이미지**까지 만드는 프로젝트입니다.
 
 ## 핵심 동작
 
 - 동화는 `Story` 스키마로 생성되며 **정확히 24페이지**를 강제합니다.
 - 언어 입력은 `--primary_lang`, `--secondary_lang` 2개를 사용합니다.
 - `--enable_tts` 활성화 시 같은 출력 폴더에서 오디오를 생성합니다.
+- `--enable_illustration` 활성화 시 같은 출력 폴더에서 페이지별 일러스트를 생성합니다.
 - TTS 요청 간 기본 간격은 `10.0`초입니다.
 
 ## 프로젝트 구조
@@ -41,6 +42,7 @@ MoreTale-AI/
 │   └── style_guide.txt
 ├── tests/
 │   ├── test_import_compat.py
+│   ├── test_main_illustration.py
 │   ├── test_story_model.py
 │   ├── test_story_prompts.py
 │   ├── test_tts_generator.py
@@ -134,10 +136,26 @@ outputs/{timestamp}_story_{slug}/audio/manifest.json
 
 24페이지 기준 요청 수는 `48`회(페이지당 `primary/secondary` 2회)입니다.
 
-### 5) 동화 JSON으로 일러스트 생성
+### 5) 동화 + 일러스트 일괄 생성
 
 ```bash
-.moretale/bin/python generators/illustration/illustration_generator.py \
+python main.py \
+  --child_name "Mina" \
+  --primary_lang "Korean" \
+  --secondary_lang "English" \
+  --enable_illustration \
+  --illustration_model "gemini-2.5-flash-image" \
+  --illustration_aspect_ratio "16:9" \
+  --illustration_request_interval_sec 1.0 \
+  --illustration_skip_existing
+```
+
+`--enable_tts`와 `--enable_illustration`은 함께 사용할 수 있습니다.
+
+### 6) (선택) 기존 동화 JSON으로만 일러스트 생성
+
+```bash
+python generators/illustration/illustration_generator.py \
   --story_json outputs/{timestamp}_story_{slug}/story_gemini-2.5-flash.json \
   --skip_existing
 ```
@@ -164,6 +182,11 @@ outputs/{timestamp}_story_{slug}/illustrations/manifest.json
 - `--tts_voice` (선택, 기본 `Achernar`): TTS voice
 - `--tts_temperature` (선택, 기본 `1.0`): TTS temperature
 - `--tts_request_interval_sec` (선택, 기본 `10.0`): 요청 간 대기(초)
+- `--enable_illustration` (선택): 일러스트 생성 활성화
+- `--illustration_model` (선택, 기본 `gemini-2.5-flash-image`): 일러스트 모델
+- `--illustration_aspect_ratio` (선택, 기본 `16:9`): 이미지 비율
+- `--illustration_request_interval_sec` (선택, 기본 `1.0`): 요청 간 대기(초)
+- `--illustration_skip_existing` (선택): 기존 `page_XX.*` 파일이 있으면 스킵
 
 ## 출력 JSON 스키마(요약)
 
@@ -195,7 +218,7 @@ python -m unittest discover -s tests -v
 - `GEMINI_STORY_API_KEY environment variable not set.`
   - 스토리 생성(`generators/story/story_generator.py`) 실행 시 `.env`에 `GEMINI_STORY_API_KEY` 설정 필요
 - `NANO_BANANA_KEY environment variable not set.`
-  - `generators/illustration/illustration_generator.py` 실행 시 `.env`에 `NANO_BANANA_KEY` 설정 필요
+  - `--enable_illustration` 또는 `generators/illustration/illustration_generator.py` 실행 시 `.env`에 `NANO_BANANA_KEY` 설정 필요
 - `ModuleNotFoundError`
   - 가상환경 활성화 확인
   - `pip install -r requirements.txt` 재실행
