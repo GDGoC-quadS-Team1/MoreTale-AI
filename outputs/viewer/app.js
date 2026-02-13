@@ -11,6 +11,12 @@ const prevBtn = document.getElementById("prev-btn");
 const nextBtn = document.getElementById("next-btn");
 const pageIndicatorEl = document.getElementById("page-indicator");
 const pageTitleEl = document.getElementById("page-title");
+const illustrationWrapEl = document.getElementById("illustration-wrap");
+const illustrationPromptWrapEl = document.getElementById("illustration-prompt-wrap");
+const illustrationPromptEl = document.getElementById("illustration-prompt");
+const illustrationScenePromptEl = document.getElementById(
+  "illustration-scene-prompt",
+);
 const textPrimaryEl = document.getElementById("text-primary");
 const textSecondaryEl = document.getElementById("text-secondary");
 const audioPrimaryWrap = document.getElementById("audio-primary-wrap");
@@ -53,6 +59,31 @@ function renderAudio(target, url) {
   target.appendChild(audio);
 }
 
+function renderIllustration(url) {
+  illustrationWrapEl.innerHTML = "";
+  if (!url) {
+    const noIllustration = document.createElement("p");
+    noIllustration.className = "missing-illustration";
+    noIllustration.textContent = "일러스트 없음";
+    illustrationWrapEl.appendChild(noIllustration);
+    return;
+  }
+
+  const link = document.createElement("a");
+  link.className = "illustration-link";
+  link.href = url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+
+  const image = document.createElement("img");
+  image.className = "illustration-image";
+  image.src = url;
+  image.alt = "페이지 일러스트";
+  image.loading = "lazy";
+  link.appendChild(image);
+  illustrationWrapEl.appendChild(link);
+}
+
 function renderPage() {
   if (!state.book || !state.book.pages || state.book.pages.length === 0) {
     hideBook();
@@ -71,6 +102,19 @@ function renderPage() {
 
   pageIndicatorEl.textContent = `${state.pageIndex + 1} / ${total}`;
   pageTitleEl.textContent = `Page ${page.page_number}`;
+  renderIllustration(page.illustration_url);
+  const fullPrompt = page.illustration_prompt || "";
+  const scenePrompt = page.illustration_scene_prompt || "";
+  illustrationPromptEl.textContent = fullPrompt
+    ? `Full: ${fullPrompt}`
+    : "Full: 없음";
+  illustrationScenePromptEl.textContent = scenePrompt
+    ? `Scene: ${scenePrompt}`
+    : "Scene: 없음";
+  illustrationPromptWrapEl.classList.toggle(
+    "hidden",
+    !fullPrompt && !scenePrompt,
+  );
   textPrimaryEl.textContent = page.text_primary || "";
   textSecondaryEl.textContent = page.text_secondary || "";
   renderAudio(audioPrimaryWrap, page.audio_primary_url);
@@ -117,7 +161,15 @@ function fillRunOptions(runs) {
     const option = document.createElement("option");
     option.value = run.id;
     const title = run.title_primary || run.id;
-    option.textContent = `${run.id} | ${title} (${run.page_count}p)`;
+    const features = [];
+    if (run.has_any_audio) {
+      features.push("audio");
+    }
+    if (run.has_any_illustration) {
+      features.push("illustration");
+    }
+    const featureText = features.length > 0 ? `, ${features.join("+")}` : "";
+    option.textContent = `${run.id} | ${title} (${run.page_count}p${featureText})`;
     runSelect.appendChild(option);
   });
 }
