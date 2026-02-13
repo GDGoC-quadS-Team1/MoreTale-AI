@@ -1,6 +1,6 @@
 import unittest
 
-from models.story_model import Page, Story
+from generators.story.story_model import Page, Story
 
 
 class TestStoryValidation(unittest.TestCase):
