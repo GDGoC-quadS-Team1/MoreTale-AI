@@ -6,6 +6,9 @@
 
 - `story/`
   - `story_generator.py`: Gemini 텍스트 모델을 호출해 동화 JSON(`Story`)를 생성합니다.
+  - `story_model.py`: `Story`, `Page` Pydantic 모델의 canonical 정의입니다.
+  - `story_prompts.py`: 스토리 프롬프트 로더/템플릿 처리(`StoryPrompt`)입니다.
+    - 텍스트 리소스는 루트 `prompts/*.txt`를 읽습니다.
 
 - `tts/`
   - `tts_generator.py`: TTS 오케스트레이션 진입점(`TTSGenerator`)
@@ -18,8 +21,16 @@
 
 - `illustration/`
   - `illustration_generator.py`: 동화 JSON(`illustration_prompt` + `illustration_scene_prompt`)를 사용해 페이지별 이미지를 생성합니다.
+  - `illustration_prompt_utils.py`: 일러스트 prefix/scene 분리 유틸의 canonical 정의입니다.
     - 기본 API 키: `.env`의 `NANO_BANANA_KEY`
     - 출력: `illustrations/page_XX.*`, `illustrations/manifest.json`
+
+## Import 호환성
+
+- 내부 구현의 canonical import는 `generators/*`를 사용합니다.
+- 하위 호환을 위해 `models/story_model.py`, `prompts/story_prompts.py`,
+  `prompts/illustration_prompt_utils.py`는 re-export shim으로 유지됩니다.
+- deprecation 경고 없이 legacy/new 경로를 모두 지원합니다.
 
 ## 호출 흐름 (TTS)
 

@@ -17,7 +17,9 @@ MoreTale-AI/
 ├── generators/
 │   ├── README.md
 │   ├── story/
-│   │   └── story_generator.py
+│   │   ├── story_generator.py
+│   │   ├── story_model.py
+│   │   └── story_prompts.py
 │   ├── tts/
 │   │   ├── tts_generator.py
 │   │   ├── tts_pipeline.py
@@ -27,15 +29,18 @@ MoreTale-AI/
 │   │   ├── tts_text.py
 │   │   └── tts_manifest.py
 │   └── illustration/
-│       └── illustration_generator.py
+│       ├── illustration_generator.py
+│       └── illustration_prompt_utils.py
 ├── models/
-│   └── story_model.py
+│   └── story_model.py  # legacy import shim
 ├── prompts/
-│   ├── story_prompts.py
+│   ├── story_prompts.py  # legacy import shim
+│   ├── illustration_prompt_utils.py  # legacy import shim
 │   ├── system_instruction.txt
 │   ├── user_prompt.txt
 │   └── style_guide.txt
 ├── tests/
+│   ├── test_import_compat.py
 │   ├── test_story_model.py
 │   ├── test_story_prompts.py
 │   ├── test_tts_generator.py
@@ -45,6 +50,19 @@ MoreTale-AI/
 
 `generators/` 내부 상세 역할은 `generators/README.md`를 참고하세요.
 브랜치 운영 정책은 `BRANCHING.md`를 참고하세요.
+
+## Import 호환 정책
+
+- canonical 모듈은 `generators/*` 경로입니다.
+- `models/*`, `prompts/*`는 기존 코드 호환을 위한 shim 레이어로 유지됩니다.
+- 경고 없이 두 import 스타일을 모두 지원합니다.
+
+예시:
+
+```python
+from generators.story.story_model import Story  # canonical
+from models.story_model import Story            # legacy shim
+```
 
 ## 빠른 시작
 
