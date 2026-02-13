@@ -17,7 +17,9 @@ MoreTale-AI/
 ├── generators/
 │   ├── README.md
 │   ├── story/
-│   │   └── story_generator.py
+│   │   ├── story_generator.py
+│   │   ├── story_model.py
+│   │   └── story_prompts.py
 │   ├── tts/
 │   │   ├── tts_generator.py
 │   │   ├── tts_pipeline.py
@@ -27,15 +29,18 @@ MoreTale-AI/
 │   │   ├── tts_text.py
 │   │   └── tts_manifest.py
 │   └── illustration/
-│       └── illustration_generator.py
+│       ├── illustration_generator.py
+│       └── illustration_prompt_utils.py
 ├── models/
-│   └── story_model.py
+│   └── story_model.py  # legacy import shim
 ├── prompts/
-│   ├── story_prompts.py
+│   ├── story_prompts.py  # legacy import shim
+│   ├── illustration_prompt_utils.py  # legacy import shim
 │   ├── system_instruction.txt
 │   ├── user_prompt.txt
 │   └── style_guide.txt
 ├── tests/
+│   ├── test_import_compat.py
 │   ├── test_story_model.py
 │   ├── test_story_prompts.py
 │   ├── test_tts_generator.py
@@ -45,6 +50,19 @@ MoreTale-AI/
 
 `generators/` 내부 상세 역할은 `generators/README.md`를 참고하세요.
 브랜치 운영 정책은 `BRANCHING.md`를 참고하세요.
+
+## Import 호환 정책
+
+- canonical 모듈은 `generators/*` 경로입니다.
+- `models/*`, `prompts/*`는 기존 코드 호환을 위한 shim 레이어로 유지됩니다.
+- 경고 없이 두 import 스타일을 모두 지원합니다.
+
+예시:
+
+```python
+from generators.story.story_model import Story  # canonical
+from models.story_model import Story            # legacy shim
+```
 
 ## 빠른 시작
 
@@ -69,6 +87,7 @@ pip install -r requirements.txt
 ```env
 GEMINI_STORY_API_KEY=YOUR_STORY_API_KEY
 GEMINI_TTS_API_KEY=YOUR_TTS_API_KEY
+NANO_BANANA_KEY=YOUR_ILLUSTRATION_API_KEY
 ```
 
 ### 3) 동화 생성
@@ -115,6 +134,21 @@ outputs/{timestamp}_story_{slug}/audio/manifest.json
 
 24페이지 기준 요청 수는 `48`회(페이지당 `primary/secondary` 2회)입니다.
 
+### 5) 동화 JSON으로 일러스트 생성
+
+```bash
+.moretale/bin/python generators/illustration/illustration_generator.py \
+  --story_json outputs/{timestamp}_story_{slug}/story_gemini-2.5-flash.json \
+  --skip_existing
+```
+
+일러스트 출력:
+
+```text
+outputs/{timestamp}_story_{slug}/illustrations/page_01.png
+outputs/{timestamp}_story_{slug}/illustrations/manifest.json
+```
+
 ## CLI 옵션
 
 - `--child_name` (필수): 아이 이름
@@ -158,9 +192,10 @@ python -m unittest discover -s tests -v
 
 - `GEMINI_TTS_API_KEY environment variable not set.`
   - `--enable_tts` 사용 시 `.env`에 `GEMINI_TTS_API_KEY` 설정 필요
-- `GEMINI_API_KEY environment variable not set.`
-  - 현재 `generators/story/story_generator.py`의 에러 문구는 `GEMINI_API_KEY`로 표시되지만,
-    실제로는 `.env`의 `GEMINI_STORY_API_KEY`가 필요합니다.
+- `GEMINI_STORY_API_KEY environment variable not set.`
+  - 스토리 생성(`generators/story/story_generator.py`) 실행 시 `.env`에 `GEMINI_STORY_API_KEY` 설정 필요
+- `NANO_BANANA_KEY environment variable not set.`
+  - `generators/illustration/illustration_generator.py` 실행 시 `.env`에 `NANO_BANANA_KEY` 설정 필요
 - `ModuleNotFoundError`
   - 가상환경 활성화 확인
   - `pip install -r requirements.txt` 재실행
