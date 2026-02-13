@@ -33,8 +33,6 @@ MoreTale-AI/
 │       ├── illustration_generator.py
 │       └── illustration_prompt_utils.py
 ├── prompts/
-│   ├── story_prompts.py  # legacy import shim
-│   ├── illustration_prompt_utils.py  # legacy import shim
 │   ├── system_instruction.txt
 │   ├── user_prompt.txt
 │   └── style_guide.txt
@@ -54,8 +52,20 @@ MoreTale-AI/
 ## Import 호환 정책
 
 - canonical 모듈은 `generators/*` 경로입니다.
-- `prompts/*`는 기존 코드 호환을 위한 shim 레이어로 유지됩니다.
+- `prompts/`는 텍스트 리소스(`*.txt`) 전용 디렉토리입니다.
 - 모델 스키마는 `generators.story.story_model` 경로만 지원합니다.
+
+마이그레이션:
+
+```python
+# before
+from prompts.story_prompts import StoryPrompt
+from prompts.illustration_prompt_utils import split_scene_prompt
+
+# after
+from generators.story.story_prompts import StoryPrompt
+from generators.illustration.illustration_prompt_utils import split_scene_prompt
+```
 
 예시:
 
