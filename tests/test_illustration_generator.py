@@ -2,8 +2,12 @@ import os
 import tempfile
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
-from generators.illustration.illustration_generator import IllustrationGenerator
+from generators.illustration.illustration_generator import (
+    IllustrationGenerator,
+    _resolve_api_key,
+)
 
 
 class _FakeIllustrationGenerator(IllustrationGenerator):
@@ -17,6 +21,16 @@ class _FakeIllustrationGenerator(IllustrationGenerator):
 
 
 class TestIllustrationPromptBuild(unittest.TestCase):
+    def test_resolve_api_key_uses_nano_banana_key(self):
+        with patch.dict(os.environ, {"NANO_BANANA_KEY": "banana-key"}, clear=True):
+            self.assertEqual(_resolve_api_key(), "banana-key")
+
+    def test_resolve_api_key_raises_without_nano_banana_key(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with self.assertRaises(ValueError) as context:
+                _resolve_api_key()
+        self.assertIn("NANO_BANANA_KEY environment variable not set.", str(context.exception))
+
     def test_build_page_prompt_uses_scene_and_full_prompt(self):
         story = SimpleNamespace(
             illustration_prefix="Dreamy style, Main character",

@@ -22,19 +22,10 @@ load_dotenv()
 
 
 def _resolve_api_key() -> str:
-    for env_name in (
-        "GEMINI_ILLUSTRATION_API_KEY",
-        "GEMINI_IMAGE_API_KEY",
-        "GEMINI_STORY_API_KEY",
-        "GEMINI_API_KEY",
-    ):
-        key = os.getenv(env_name)
-        if key:
-            return key
-    raise ValueError(
-        "No Gemini API key found. Set one of: "
-        "GEMINI_ILLUSTRATION_API_KEY, GEMINI_IMAGE_API_KEY, GEMINI_STORY_API_KEY, GEMINI_API_KEY."
-    )
+    key = os.getenv("NANO_BANANA_KEY")
+    if key:
+        return key
+    raise ValueError("NANO_BANANA_KEY environment variable not set.")
 
 
 def _pick_image_extension(mime_type: str | None) -> str:
