@@ -11,12 +11,12 @@ from prompts.story_prompts import StoryPrompt
 from typing import Optional
 
 load_dotenv()
-gemini_api_key = os.getenv("GEMINI_STORY_API_KEY")
 
 class StoryGenerator:
     def __init__(self, model_name: str = "gemini-2.5-flash", include_style_guide: bool = False):
+        gemini_api_key = os.getenv("GEMINI_STORY_API_KEY")
         if not gemini_api_key:
-            raise ValueError("GEMINI_API_KEY environment variable not set.")
+            raise ValueError("GEMINI_STORY_API_KEY environment variable not set.")
         self.client = genai.Client(api_key=gemini_api_key)
         self.model_name = model_name
         self.prompts = StoryPrompt(include_style_guide=include_style_guide)

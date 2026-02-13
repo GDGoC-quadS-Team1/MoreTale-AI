@@ -174,9 +174,8 @@ python -m unittest discover -s tests -v
 
 - `GEMINI_TTS_API_KEY environment variable not set.`
   - `--enable_tts` 사용 시 `.env`에 `GEMINI_TTS_API_KEY` 설정 필요
-- `GEMINI_API_KEY environment variable not set.`
-  - 현재 `generators/story/story_generator.py`의 에러 문구는 `GEMINI_API_KEY`로 표시되지만,
-    실제로는 `.env`의 `GEMINI_STORY_API_KEY`가 필요합니다.
+- `GEMINI_STORY_API_KEY environment variable not set.`
+  - 스토리 생성(`generators/story/story_generator.py`) 실행 시 `.env`에 `GEMINI_STORY_API_KEY` 설정 필요
 - `NANO_BANANA_KEY environment variable not set.`
   - `generators/illustration/illustration_generator.py` 실행 시 `.env`에 `NANO_BANANA_KEY` 설정 필요
 - `ModuleNotFoundError`
