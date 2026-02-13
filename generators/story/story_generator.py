@@ -1,14 +1,16 @@
 import os
+from typing import Optional
+
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
-from models.story_model import Story
-from prompts.illustration_prompt_utils import (
+
+from generators.illustration.illustration_prompt_utils import (
     build_illustration_prefix,
     split_scene_prompt,
 )
-from prompts.story_prompts import StoryPrompt
-from typing import Optional
+from generators.story.story_model import Story
+from generators.story.story_prompts import StoryPrompt
 
 load_dotenv()
 

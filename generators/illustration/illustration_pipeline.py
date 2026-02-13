@@ -2,7 +2,7 @@ from pathlib import Path
 
 from google import genai
 
-from models.story_model import Story
+from generators.story.story_model import Story
 
 from .illustration_env import resolve_api_key
 from .illustration_image_client import ImageGenerationClient

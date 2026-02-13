@@ -1,5 +1,6 @@
-from models.story_model import Story
-from prompts.illustration_prompt_utils import build_illustration_prefix
+from generators.story.story_model import Story
+
+from .illustration_prompt_utils import build_illustration_prefix
 
 
 def build_page_prompt(story: Story, page) -> tuple[str, str]:
@@ -30,4 +31,3 @@ def build_page_prompt(story: Story, page) -> tuple[str, str]:
         return illustration_prefix, "prefix_only"
 
     raise ValueError(f"page={page.page_number} has no illustration prompt text.")
-
