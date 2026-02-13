@@ -1,22 +1,24 @@
 import os
+from typing import Optional
+
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
-from models.story_model import Story
-from prompts.illustration_prompt_utils import (
+
+from generators.illustration.illustration_prompt_utils import (
     build_illustration_prefix,
     split_scene_prompt,
 )
-from prompts.story_prompts import StoryPrompt
-from typing import Optional
+from generators.story.story_model import Story
+from generators.story.story_prompts import StoryPrompt
 
 load_dotenv()
-gemini_api_key = os.getenv("GEMINI_STORY_API_KEY")
 
 class StoryGenerator:
     def __init__(self, model_name: str = "gemini-2.5-flash", include_style_guide: bool = False):
+        gemini_api_key = os.getenv("GEMINI_STORY_API_KEY")
         if not gemini_api_key:
-            raise ValueError("GEMINI_API_KEY environment variable not set.")
+            raise ValueError("GEMINI_STORY_API_KEY environment variable not set.")
         self.client = genai.Client(api_key=gemini_api_key)
         self.model_name = model_name
         self.prompts = StoryPrompt(include_style_guide=include_style_guide)
