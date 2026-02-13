@@ -32,8 +32,6 @@ MoreTale-AI/
 │   └── illustration/
 │       ├── illustration_generator.py
 │       └── illustration_prompt_utils.py
-├── models/
-│   └── story_model.py  # legacy import shim
 ├── prompts/
 │   ├── story_prompts.py  # legacy import shim
 │   ├── illustration_prompt_utils.py  # legacy import shim
@@ -56,14 +54,13 @@ MoreTale-AI/
 ## Import 호환 정책
 
 - canonical 모듈은 `generators/*` 경로입니다.
-- `models/*`, `prompts/*`는 기존 코드 호환을 위한 shim 레이어로 유지됩니다.
-- 경고 없이 두 import 스타일을 모두 지원합니다.
+- `prompts/*`는 기존 코드 호환을 위한 shim 레이어로 유지됩니다.
+- 모델 스키마는 `generators.story.story_model` 경로만 지원합니다.
 
 예시:
 
 ```python
 from generators.story.story_model import Story  # canonical
-from models.story_model import Story            # legacy shim
 ```
 
 ## 빠른 시작
