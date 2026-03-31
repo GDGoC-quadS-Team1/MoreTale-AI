@@ -112,10 +112,10 @@ class TestFastAPIServerPhase1(unittest.TestCase):
     def test_post_stories_returns_202_with_required_fields(self) -> None:
         story_id = "20260221_120000_story_mina-friendship"
         with patch(
-            "app.api.stories.StoryService.generate_story",
+            "app.services.story_orchestrator.StoryService.generate_story",
             return_value=(_build_fake_story(), "gemini-2.5-flash"),
         ):
-            with patch("app.api.stories.make_story_id", return_value=story_id):
+            with patch("app.services.story_orchestrator.make_story_id", return_value=story_id):
                 response = self.client.post(
                     "/api/stories/",
                     json=self._build_create_payload(),
@@ -132,10 +132,10 @@ class TestFastAPIServerPhase1(unittest.TestCase):
     def test_background_success_updates_to_completed_and_result(self) -> None:
         story_id = "20260221_120001_story_mina-friendship"
         with patch(
-            "app.api.stories.StoryService.generate_story",
+            "app.services.story_orchestrator.StoryService.generate_story",
             return_value=(_build_fake_story(), "gemini-2.5-flash"),
         ):
-            with patch("app.api.stories.make_story_id", return_value=story_id):
+            with patch("app.services.story_orchestrator.make_story_id", return_value=story_id):
                 create_response = self.client.post(
                     "/api/stories/",
                     json=self._build_create_payload(),
@@ -189,10 +189,10 @@ class TestFastAPIServerPhase1(unittest.TestCase):
     def test_generation_failure_is_saved_in_meta(self) -> None:
         story_id = "20260221_120002_story_mina-friendship"
         with patch(
-            "app.api.stories.StoryService.generate_story",
+            "app.services.story_orchestrator.StoryService.generate_story",
             side_effect=RuntimeError("simulated failure"),
         ):
-            with patch("app.api.stories.make_story_id", return_value=story_id):
+            with patch("app.services.story_orchestrator.make_story_id", return_value=story_id):
                 response = self.client.post(
                     "/api/stories/",
                     json=self._build_create_payload(),
