@@ -2,6 +2,8 @@ import os
 import sys
 import tempfile
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 try:
@@ -10,27 +12,13 @@ except ModuleNotFoundError:  # pragma: no cover
     main = None
 
 
-class _FakeStory:
-    title_primary = "Test Story"
-
-    def model_dump_json(self, indent: int = 4) -> str:
-        return '{"title_primary":"Test Story","pages":[]}'
-
-
-class _FakeStoryGenerator:
-    def __init__(self, model_name: str = "gemini-2.5-flash", include_style_guide: bool = False):
-        self.model_name = model_name
-
-    def generate_story(
-        self,
-        child_name: str,
-        primary_lang: str,
-        secondary_lang: str,
-        theme: str,
-        extra_prompt: str = "",
-        child_age: int | None = None,
-    ):
-        return _FakeStory()
+def _fake_pipeline_result(illustration_result: dict | None = None) -> SimpleNamespace:
+    return SimpleNamespace(
+        story=SimpleNamespace(title_primary="Test Story"),
+        story_json_path=Path("outputs/story_gemini-2.5-flash.json"),
+        tts_result=None,
+        illustration_result=illustration_result,
+    )
 
 
 @unittest.skipIf(
@@ -54,13 +42,13 @@ class TestMainIllustration(unittest.TestCase):
             original_cwd = os.getcwd()
             os.chdir(tmp_dir)
             try:
-                with patch("main.StoryGenerator", _FakeStoryGenerator):
-                    with patch.dict("main.os.environ", {}, clear=True):
-                        with patch("main.datetime.datetime") as mocked_datetime:
-                            mocked_datetime.now.return_value.strftime.return_value = "20260211_000000"
-                            with patch.object(sys, "argv", args):
-                                with self.assertRaises(SystemExit) as context:
-                                    main.main()
+                with patch(
+                    "main.run_story_generation_pipeline",
+                    side_effect=RuntimeError("NANO_BANANA_KEY environment variable not set."),
+                ):
+                    with patch.object(sys, "argv", args):
+                        with self.assertRaises(SystemExit) as context:
+                            main.main()
                 self.assertEqual(context.exception.code, 1)
             finally:
                 os.chdir(original_cwd)
@@ -77,8 +65,7 @@ class TestMainIllustration(unittest.TestCase):
             "--enable_illustration",
         ]
 
-        fake_illustration_instance = unittest.mock.Mock()
-        fake_illustration_instance.generate_from_story.return_value = {
+        illustration_result = {
             "total_tasks": 25,
             "generated": 25,
             "skipped": 0,
@@ -97,43 +84,28 @@ class TestMainIllustration(unittest.TestCase):
             original_cwd = os.getcwd()
             os.chdir(tmp_dir)
             try:
-                with patch("main.StoryGenerator", _FakeStoryGenerator):
-                    with patch.dict("main.os.environ", {"NANO_BANANA_KEY": "dummy-key"}, clear=True):
-                        with patch("main.datetime.datetime") as mocked_datetime:
-                            mocked_datetime.now.return_value.strftime.return_value = "20260211_000000"
-                            with patch(
-                                "main.IllustrationGenerator",
-                                return_value=fake_illustration_instance,
-                            ) as mocked_illustration:
-                                with patch.object(sys, "argv", args):
-                                    main.main()
+                with patch("main.datetime.datetime") as mocked_datetime:
+                    mocked_datetime.now.return_value.strftime.return_value = "20260211_000000"
+                    with patch(
+                        "main.run_story_generation_pipeline",
+                        return_value=_fake_pipeline_result(
+                            illustration_result=illustration_result
+                        ),
+                    ) as mocked_pipeline:
+                        with patch.object(sys, "argv", args):
+                            main.main()
 
-                mocked_illustration.assert_called_once()
+                pipeline_request = mocked_pipeline.call_args.kwargs["request"]
+                self.assertTrue(pipeline_request.enable_illustration)
+                self.assertTrue(pipeline_request.enable_cover_illustration)
+                self.assertEqual(pipeline_request.illustration_model, "gemini-2.5-flash-image")
+                self.assertEqual(pipeline_request.illustration_aspect_ratio, "1:1")
                 self.assertEqual(
-                    mocked_illustration.call_args.kwargs["model_name"],
-                    "gemini-2.5-flash-image",
-                )
-                self.assertEqual(
-                    mocked_illustration.call_args.kwargs["aspect_ratio"],
-                    "1:1",
-                )
-                self.assertEqual(
-                    mocked_illustration.call_args.kwargs["cover_aspect_ratio"],
+                    pipeline_request.illustration_cover_aspect_ratio,
                     "5:4",
                 )
-                self.assertEqual(
-                    mocked_illustration.call_args.kwargs["request_interval_sec"],
-                    1.0,
-                )
-                fake_illustration_instance.generate_from_story.assert_called_once()
-                self.assertEqual(
-                    fake_illustration_instance.generate_from_story.call_args.kwargs["skip_existing"],
-                    False,
-                )
-                self.assertEqual(
-                    fake_illustration_instance.generate_from_story.call_args.kwargs["generate_cover"],
-                    True,
-                )
+                self.assertEqual(pipeline_request.illustration_request_interval_sec, 1.0)
+                self.assertFalse(pipeline_request.illustration_skip_existing)
             finally:
                 os.chdir(original_cwd)
 
