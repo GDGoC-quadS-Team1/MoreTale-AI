@@ -15,12 +15,12 @@ from app.schemas.story import (
 from app.services.illustration_service import IllustrationService
 from app.services.job_store import JobStore
 from app.services.request_context import log_event
-from app.services.storage import (
-    build_story_result_payload,
+from app.services.output_paths import (
     make_story_id,
     to_static_outputs_url,
     write_story_json,
 )
+from app.services.story_result_builder import build_story_result_payload
 from app.services.story_service import StoryService
 from app.services.tts_service import TTSService
 
