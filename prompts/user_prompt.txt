@@ -15,5 +15,8 @@ Instructions:
 - Set `primary_language` and `secondary_language` fields to match the input language names exactly.
 - Keep each page short and engaging for young children.
 - Use both languages on every page.
+- For every page, include a `vocabulary` array with 3 to 5 core word pairs drawn from that page.
+- Each `vocabulary` item must include `primary_word`, `secondary_word`, `primary_definition`, and `secondary_definition`.
+- Keep vocabulary definitions short, concrete, and child-friendly.
 
 Return ONLY the JSON.

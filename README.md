@@ -1,7 +1,7 @@
 # MoreTale-AI Server
 
 MoreTale-AI의 FastAPI 마이크로서비스입니다.  
-동화 생성 요청을 받아 비동기 작업으로 처리하고, 결과(JSON/TTS/일러스트)를 URL 기반으로 제공합니다.
+동화 생성 요청을 받아 비동기 작업으로 처리하고, 결과(JSON/TTS/표지+내부 일러스트)를 URL 기반으로 제공합니다.
 
 CLI 사용 가이드는 `cli/README.md`를 참고하세요.
 
@@ -111,7 +111,10 @@ curl -X POST http://127.0.0.1:8000/api/stories/ \
     "generation": {
       "story_model": "gemini-2.5-flash",
       "enable_tts": true,
-      "enable_illustration": true
+      "enable_illustration": true,
+      "enable_cover_illustration": true,
+      "illustration_aspect_ratio": "1:1",
+      "illustration_cover_aspect_ratio": "5:4"
     }
   }'
 ```

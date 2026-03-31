@@ -28,8 +28,13 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--aspect_ratio",
-        default="16:9",
-        help="Image aspect ratio (e.g. 16:9, 1:1, 3:4).",
+        default="1:1",
+        help="Interior page image aspect ratio (e.g. 1:1, 4:3, 16:9).",
+    )
+    parser.add_argument(
+        "--cover_aspect_ratio",
+        default="5:4",
+        help="Cover image aspect ratio (e.g. 5:4, 4:5).",
     )
     parser.add_argument(
         "--request_interval_sec",
@@ -41,6 +46,11 @@ def parse_args() -> argparse.Namespace:
         "--skip_existing",
         action="store_true",
         help="Skip pages if page_XX.* already exists in output illustrations directory.",
+    )
+    parser.add_argument(
+        "--skip_cover",
+        action="store_true",
+        help="Skip cover generation and only create interior page illustrations.",
     )
     return parser.parse_args()
 
@@ -55,6 +65,7 @@ def main() -> None:
     generator = IllustrationGenerator(
         model_name=args.model_name,
         aspect_ratio=args.aspect_ratio,
+        cover_aspect_ratio=args.cover_aspect_ratio,
         request_interval_sec=args.request_interval_sec,
     )
     story = generator.load_story(str(story_path))
@@ -62,6 +73,7 @@ def main() -> None:
         story=story,
         output_dir=output_dir,
         skip_existing=args.skip_existing,
+        generate_cover=not args.skip_cover,
     )
     print(
         "Illustration summary: "
@@ -69,5 +81,6 @@ def main() -> None:
         f"generated={result['generated']} "
         f"skipped={result['skipped']} "
         f"failed={result['failed']} "
+        f"cover_status={result['cover']['status']} "
         f"manifest={result['manifest_path']}"
     )

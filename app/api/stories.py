@@ -35,13 +35,17 @@ router = APIRouter(
 job_store = JobStore()
 
 
-def _extract_generation_flags(request_payload: dict[str, Any]) -> tuple[bool, bool]:
+def _extract_generation_flags(request_payload: dict[str, Any]) -> tuple[bool, bool, bool]:
     generation = request_payload.get("generation")
     if not isinstance(generation, dict):
-        return False, False
-    return bool(generation.get("enable_tts", False)), bool(
-        generation.get("enable_illustration", False)
+        return False, False, False
+
+    include_tts = bool(generation.get("enable_tts", False))
+    include_illustration = bool(generation.get("enable_illustration", False))
+    include_cover_illustration = include_illustration and bool(
+        generation.get("enable_cover_illustration", True)
     )
+    return include_tts, include_illustration, include_cover_illustration
 
 
 def _extract_service_errors(job_payload: dict[str, Any]) -> dict[str, str | None]:
@@ -70,7 +74,11 @@ def _run_story_generation_job(
     request_payload: dict[str, Any],
     request_id: str | None = None,
 ) -> None:
-    include_tts, include_illustration = _extract_generation_flags(request_payload)
+    (
+        include_tts,
+        include_illustration,
+        include_cover_illustration,
+    ) = _extract_generation_flags(request_payload)
     service_errors: dict[str, str | None] = {"tts": None, "illustrations": None}
     story_json_path = None
 
@@ -116,6 +124,9 @@ def _run_story_generation_job(
             story_id=story_id,
             include_tts=include_tts,
             include_illustration=include_illustration,
+            include_cover_illustration=include_cover_illustration,
+            illustration_aspect_ratio=request.generation.illustration_aspect_ratio,
+            cover_aspect_ratio=request.generation.illustration_cover_aspect_ratio,
             job_status="completed",
             service_errors=service_errors,
         )
@@ -144,6 +155,9 @@ def _run_story_generation_job(
                     story_id=story_id,
                     include_tts=include_tts,
                     include_illustration=include_illustration,
+                    include_cover_illustration=include_cover_illustration,
+                    illustration_aspect_ratio=request.generation.illustration_aspect_ratio,
+                    cover_aspect_ratio=request.generation.illustration_cover_aspect_ratio,
                     job_status="failed",
                     service_errors=service_errors,
                 )
@@ -284,16 +298,34 @@ def get_story_result(story_id: str) -> StoryResultResponse:
         )
 
     request_payload = job.get("request")
-    include_tts, include_illustration = _extract_generation_flags(
+    (
+        include_tts,
+        include_illustration,
+        include_cover_illustration,
+    ) = _extract_generation_flags(
         request_payload if isinstance(request_payload, dict) else {}
     )
     service_errors = _extract_service_errors(job)
+    generation = request_payload.get("generation") if isinstance(request_payload, dict) else {}
+    illustration_aspect_ratio = (
+        str(generation.get("illustration_aspect_ratio", "1:1"))
+        if isinstance(generation, dict)
+        else "1:1"
+    )
+    cover_aspect_ratio = (
+        str(generation.get("illustration_cover_aspect_ratio", "5:4"))
+        if isinstance(generation, dict)
+        else "5:4"
+    )
 
     try:
         payload = build_story_result_payload(
             story_id=story_id,
             include_tts=include_tts,
             include_illustration=include_illustration,
+            include_cover_illustration=include_cover_illustration,
+            illustration_aspect_ratio=illustration_aspect_ratio,
+            cover_aspect_ratio=cover_aspect_ratio,
             job_status=job_status,
             service_errors=service_errors,
         )

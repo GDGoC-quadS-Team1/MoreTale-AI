@@ -22,11 +22,12 @@ class IllustrationService:
             api_key=api_key,
             model_name=request.generation.illustration_model,
             aspect_ratio=request.generation.illustration_aspect_ratio,
+            cover_aspect_ratio=request.generation.illustration_cover_aspect_ratio,
             request_interval_sec=request.generation.illustration_request_interval_sec,
         )
         return generator.generate_from_story(
             story=story,
             output_dir=str(get_run_dir(story_id)),
             skip_existing=request.generation.illustration_skip_existing,
+            generate_cover=request.generation.enable_cover_illustration,
         )
-

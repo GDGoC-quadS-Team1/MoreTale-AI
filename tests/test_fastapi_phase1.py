@@ -14,10 +14,11 @@ except ModuleNotFoundError:  # pragma: no cover - local env without FastAPI
     create_app = None
 
 try:
-    from generators.story.story_model import Page, Story
+    from generators.story.story_model import Page, Story, VocabularyEntry
 except ModuleNotFoundError:  # pragma: no cover - local env without pydantic
     Page = None
     Story = None
+    VocabularyEntry = None
 
 
 def _build_fake_story():
@@ -28,6 +29,15 @@ def _build_fake_story():
             text_secondary=f"Secondary text {page_number}",
             illustration_prompt=f"Illustration prompt {page_number}",
             illustration_scene_prompt=f"Scene prompt {page_number}",
+            vocabulary=[
+                VocabularyEntry(
+                    entry_id=f"page-{page_number}-dragon",
+                    primary_word="dragon",
+                    secondary_word="용",
+                    primary_definition="a large creature from stories",
+                    secondary_definition="이야기 속 상상의 큰 동물",
+                )
+            ],
         )
         for page_number in range(1, 25)
     ]
@@ -44,7 +54,11 @@ def _build_fake_story():
 
 
 @unittest.skipIf(
-    TestClient is None or create_app is None or Story is None or Page is None,
+    TestClient is None
+    or create_app is None
+    or Story is None
+    or Page is None
+    or VocabularyEntry is None,
     "fastapi/pydantic dependencies are not installed in this environment",
 )
 class TestFastAPIServerPhase1(unittest.TestCase):
@@ -154,6 +168,14 @@ class TestFastAPIServerPhase1(unittest.TestCase):
         self.assertIsNone(result_body["pages"][0]["audio_primary_url"])
         self.assertIsNone(result_body["pages"][0]["audio_secondary_url"])
         self.assertIsNone(result_body["pages"][0]["illustration_url"])
+        self.assertEqual(result_body["pages"][0]["vocabulary"][0]["primary_word"], "dragon")
+        self.assertEqual(
+            result_body["pages"][0]["vocabulary"][0]["pronunciation"]["primary_status"],
+            "not_requested",
+        )
+        self.assertIsNone(
+            result_body["pages"][0]["vocabulary"][0]["pronunciation"]["primary_url"]
+        )
 
     def test_get_story_not_found_returns_404(self) -> None:
         response = self.client.get(

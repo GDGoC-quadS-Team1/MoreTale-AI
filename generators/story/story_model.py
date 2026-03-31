@@ -3,6 +3,32 @@ from typing import List
 from pydantic import BaseModel, Field, field_validator
 
 
+class VocabularyEntry(BaseModel):
+    entry_id: str | None = Field(
+        default=None,
+        description=(
+            "Stable page-local identifier for the vocabulary entry. The application "
+            "may populate this automatically when the model omits it."
+        ),
+    )
+    primary_word: str = Field(
+        ...,
+        description="Core word or short phrase in the primary language.",
+    )
+    secondary_word: str = Field(
+        ...,
+        description="Aligned translation of the same word or short phrase.",
+    )
+    primary_definition: str = Field(
+        ...,
+        description="Child-friendly definition in the primary language.",
+    )
+    secondary_definition: str = Field(
+        ...,
+        description="Child-friendly definition in the secondary language.",
+    )
+
+
 class Page(BaseModel):
     page_number: int = Field(..., description="Page number from 1 to 24")
     text_primary: str = Field(
@@ -24,6 +50,13 @@ class Page(BaseModel):
             "Page-specific scene description derived from illustration_prompt after "
             "removing the global illustration_prefix/main_character_design. Intended "
             "for reuse with a shared prefix when generating images."
+        ),
+    )
+    vocabulary: List[VocabularyEntry] = Field(
+        default_factory=list,
+        description=(
+            "Page-specific bilingual vocabulary pairs with short definitions that help "
+            "the child learn core words from the page."
         ),
     )
 
@@ -58,6 +91,14 @@ class Story(BaseModel):
             "Global illustration prefix composed from image_style and "
             "main_character_design (e.g., '{image_style}, {main_character_design}'). "
             "This may be populated by the application for reuse across pages."
+        ),
+    )
+    cover_illustration_prompt: str | None = Field(
+        default=None,
+        description=(
+            "Application-generated prompt for the book cover illustration. This is "
+            "derived from the story-level illustration style and representative page "
+            "scenes so the cover can be generated alongside the interior images."
         ),
     )
 

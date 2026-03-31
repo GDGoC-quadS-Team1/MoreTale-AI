@@ -8,7 +8,7 @@ CLI는 Gemini API를 사용해 다음을 생성합니다.
 
 - 이중언어 동화 JSON
 - (선택) 페이지 단위 TTS 오디오(WAV)
-- (선택) 페이지 단위 일러스트 이미지
+- (선택) 표지 이미지(`5:4`) + 페이지 단위 일러스트 이미지(`1:1`)
 
 모든 결과물은 `outputs/{run_id}/...`에 저장됩니다.
 
@@ -87,7 +87,8 @@ python main.py \
   --secondary_lang "English" \
   --enable_illustration \
   --illustration_model "gemini-2.5-flash-image" \
-  --illustration_aspect_ratio "16:9" \
+  --illustration_aspect_ratio "1:1" \
+  --illustration_cover_aspect_ratio "5:4" \
   --illustration_request_interval_sec 1.0 \
   --illustration_skip_existing
 ```
@@ -97,6 +98,7 @@ python main.py \
 ```bash
 python generators/illustration/illustration_generator.py \
   --story_json outputs/{timestamp}_story_{slug}/story_gemini-2.5-flash.json \
+  --cover_aspect_ratio "5:4" \
   --skip_existing
 ```
 
@@ -117,9 +119,11 @@ python generators/illustration/illustration_generator.py \
 - `--tts_request_interval_sec` (선택, 기본 `10.0`)
 - `--enable_illustration` (선택): 일러스트 생성 활성화
 - `--illustration_model` (선택, 기본 `gemini-2.5-flash-image`)
-- `--illustration_aspect_ratio` (선택, 기본 `16:9`)
+- `--illustration_aspect_ratio` (선택, 기본 `1:1`): 내부 삽화 비율
+- `--illustration_cover_aspect_ratio` (선택, 기본 `5:4`): 표지 비율
 - `--illustration_request_interval_sec` (선택, 기본 `1.0`)
 - `--illustration_skip_existing` (선택): 기존 파일 있으면 스킵
+- `--illustration_skip_cover` (선택): 표지 생성 생략
 
 ## 출력 JSON 스키마(요약)
 
@@ -131,6 +135,7 @@ python generators/illustration/illustration_generator.py \
 - `image_style`
 - `main_character_design`
 - `illustration_prefix` (선택)
+- `cover_illustration_prompt` (선택)
 - `pages` (정확히 24개)
   - `page_number`
   - `text_primary`

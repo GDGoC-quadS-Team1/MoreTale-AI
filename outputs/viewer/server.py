@@ -115,6 +115,22 @@ def load_illustration_url_map(run_dir: Path) -> dict[int, str]:
     return url_map
 
 
+def load_illustration_aspect_ratio(run_dir: Path) -> str | None:
+    manifest_path = run_dir / "illustrations" / "manifest.json"
+    if not manifest_path.is_file():
+        return None
+
+    try:
+        manifest = load_json(manifest_path)
+    except Exception:
+        return None
+
+    page_aspect_ratio = str(
+        manifest.get("page_aspect_ratio", manifest.get("aspect_ratio", ""))
+    ).strip()
+    return page_aspect_ratio or None
+
+
 def iter_runs() -> list[dict]:
     runs: list[dict] = []
     for run_dir in sorted(
@@ -146,6 +162,9 @@ def iter_runs() -> list[dict]:
         illustration_root = run_dir / "illustrations"
         has_any_illustration = illustration_root.exists() and any(
             illustration_root.glob("page_*.*")
+        )
+        has_any_illustration = has_any_illustration or (
+            illustration_root.exists() and any(illustration_root.glob("cover.*"))
         )
         updated_at = datetime.fromtimestamp(run_dir.stat().st_mtime).isoformat(
             timespec="seconds"
@@ -202,6 +221,7 @@ def build_book_payload(run_id: str) -> dict:
     primary_slug = slugify_language_name(primary_language)
     secondary_slug = slugify_language_name(secondary_language)
     illustration_urls = load_illustration_url_map(run_dir=run_dir)
+    illustration_aspect_ratio = load_illustration_aspect_ratio(run_dir=run_dir) or "1:1"
 
     payload_pages: list[dict] = []
     for index, page in enumerate(pages):
@@ -250,6 +270,11 @@ def build_book_payload(run_id: str) -> dict:
 
     return {
         "run_id": run_id,
+        "assets": {
+            "illustrations": {
+                "aspect_ratio": illustration_aspect_ratio,
+            }
+        },
         "meta": {
             "title_primary": str(story.get("title_primary", "")),
             "title_secondary": str(story.get("title_secondary", "")),
@@ -264,6 +289,15 @@ def build_book_payload(run_id: str) -> dict:
 class ViewerHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(OUTPUTS_DIR), **kwargs)
+
+    def end_headers(self) -> None:
+        parsed = urlparse(self.path)
+        if parsed.path.startswith("/viewer/") or parsed.path in {"/viewer", "/"}:
+            # Disable browser cache for viewer shell assets so style/script edits are reflected immediately.
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+            self.send_header("Pragma", "no-cache")
+            self.send_header("Expires", "0")
+        super().end_headers()
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)

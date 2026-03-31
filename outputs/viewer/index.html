@@ -3,69 +3,106 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MoreTale Outputs Viewer</title>
-    <link rel="stylesheet" href="/viewer/styles.css" />
+    <title>MoreTale Story Viewer</title>
+    <link rel="stylesheet" href="/viewer/styles.css?v=20260222-2" />
   </head>
   <body>
-    <main class="container">
-      <h1>MoreTale Outputs Viewer</h1>
-
-      <section class="toolbar">
-        <label for="run-select">실행 폴더</label>
-        <select id="run-select"></select>
-      </section>
-
-      <section id="status" class="status" aria-live="polite"></section>
-
-      <section id="book-meta" class="book-meta hidden">
-        <h2 id="book-title"></h2>
-        <p id="book-subtitle"></p>
-        <p id="book-lang"></p>
-      </section>
-
-      <section id="page-view" class="page-view hidden">
-        <div class="page-nav">
-          <button id="prev-btn" type="button">이전</button>
-          <span id="page-indicator">0 / 0</span>
-          <button id="next-btn" type="button">다음</button>
+    <main class="viewer-shell">
+      <header class="viewer-header">
+        <div class="brand-block">
+          <h1 id="book-title" class="book-title">
+            <svg
+              class="brand-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path
+                d="M3 6.75C3 5.50736 4.00736 4.5 5.25 4.5H10.5C11.7426 4.5 12.75 5.50736 12.75 6.75V18.75C12.75 17.5074 11.7426 16.5 10.5 16.5H5.25C4.00736 16.5 3 17.5074 3 18.75V6.75Z"
+                stroke="currentColor"
+                stroke-width="1.9"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M21 6.75C21 5.50736 19.9926 4.5 18.75 4.5H13.5C12.2574 4.5 11.25 5.50736 11.25 6.75V18.75C11.25 17.5074 12.2574 16.5 13.5 16.5H18.75C19.9926 16.5 21 17.5074 21 18.75V6.75Z"
+                stroke="currentColor"
+                stroke-width="1.9"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span>숲 속 친구들의 모험</span>
+          </h1>
+          <p id="book-subtitle" class="book-subtitle">Forest Friends' Adventure</p>
         </div>
 
-        <article class="page-card">
-          <h3 id="page-title"></h3>
+        <div class="top-controls">
+          <div class="left-controls">
+            <div class="language-switch" role="tablist" aria-label="언어 선택">
+              <button id="mode-primary" class="lang-btn" type="button" role="tab" aria-selected="false">
+                <span class="lang-code">KR</span>
+                <span id="mode-primary-label">한국어</span>
+              </button>
+              <button id="mode-secondary" class="lang-btn active" type="button" role="tab" aria-selected="true">
+                <span class="lang-code">GB</span>
+                <span id="mode-secondary-label">English</span>
+              </button>
+              <button id="mode-both" class="lang-btn" type="button" role="tab" aria-selected="false">
+                <span class="lang-code">🌍</span>
+                <span>둘 다 / Both</span>
+              </button>
+            </div>
 
-          <div class="content-block">
-            <h4>Illustration</h4>
-            <div id="illustration-wrap"></div>
-            <details id="illustration-prompt-wrap" class="prompt-details">
-              <summary>Illustration Prompt</summary>
-              <p id="illustration-prompt" class="prompt-text"></p>
-              <p id="illustration-scene-prompt" class="prompt-text"></p>
-            </details>
+            <label class="run-picker" for="run-select">
+              <span>Run</span>
+              <select id="run-select"></select>
+            </label>
           </div>
 
-          <div class="content-block">
-            <h4>Primary Text</h4>
-            <p id="text-primary"></p>
-          </div>
+          <button id="sound-toggle" class="sound-toggle" type="button">소리 켬</button>
+        </div>
 
-          <div class="content-block">
-            <h4>Secondary Text</h4>
-            <p id="text-secondary"></p>
-          </div>
+        <p id="status" class="status" aria-live="polite"></p>
+      </header>
 
-          <div class="content-block">
-            <h4>Primary Audio</h4>
-            <div id="audio-primary-wrap"></div>
-          </div>
+      <section id="page-view" class="page-view hidden">
+        <article id="page-card" class="page-card">
+          <section class="illustration-pane">
+            <div id="page-badge" class="page-badge">1</div>
+            <div id="illustration-wrap" class="illustration-wrap"></div>
+          </section>
 
-          <div class="content-block">
-            <h4>Secondary Audio</h4>
-            <div id="audio-secondary-wrap"></div>
-          </div>
+          <section class="story-pane">
+            <div class="story-head">
+              <span id="active-language-pill" class="language-pill">English</span>
+              <div class="play-controls">
+                <button id="play-btn" class="play-btn" type="button" aria-label="현재 페이지 음성 재생">
+                  ▶
+                </button>
+                <button id="play-primary-btn" class="dual-play-btn hidden" type="button" aria-label="원문 오디오 재생">
+                  KR ▶
+                </button>
+                <button id="play-secondary-btn" class="dual-play-btn hidden" type="button" aria-label="번역문 오디오 재생">
+                  EN ▶
+                </button>
+              </div>
+            </div>
+            <div id="story-text" class="story-text"></div>
+          </section>
         </article>
+
+        <nav class="page-nav" aria-label="페이지 이동">
+          <button id="prev-btn" class="nav-btn" type="button" aria-label="이전 페이지">‹</button>
+          <div id="page-dots" class="page-dots"></div>
+          <button id="next-btn" class="nav-btn" type="button" aria-label="다음 페이지">›</button>
+        </nav>
+
+        <p id="page-indicator" class="page-indicator" aria-live="polite">1 / 1</p>
       </section>
+
+      <audio id="speech-audio" class="hidden-audio" preload="none"></audio>
     </main>
 
-    <script src="/viewer/app.js" defer></script>
+    <script src="/viewer/app.js?v=20260222-2" defer></script>
   </body>
 </html>
