@@ -20,10 +20,10 @@
   - `tts_manifest.py`: `audio/manifest.json` 저장
 
 - `illustration/`
-  - `illustration_generator.py`: 동화 JSON(`illustration_prompt` + `illustration_scene_prompt`)를 사용해 페이지별 이미지를 생성합니다.
+  - `illustration_generator.py`: 동화 JSON(`cover_illustration_prompt`, `illustration_prompt`, `illustration_scene_prompt`)를 사용해 표지와 페이지별 이미지를 생성합니다.
   - `illustration_prompt_utils.py`: 일러스트 prefix/scene 분리 유틸의 canonical 정의입니다.
     - 기본 API 키: `.env`의 `NANO_BANANA_KEY`
-    - 출력: `illustrations/page_XX.*`, `illustrations/manifest.json`
+    - 출력: `illustrations/cover.*`, `illustrations/page_XX.*`, `illustrations/manifest.json`
 
 ## Import 호환성
 

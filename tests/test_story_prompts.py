@@ -27,6 +27,8 @@ class TestStoryPrompt(unittest.TestCase):
         self.assertIn("exactly 24 pages", user_prompt)
         self.assertIn("`primary_language`", user_prompt)
         self.assertIn("`secondary_language`", user_prompt)
+        self.assertIn("`vocabulary` array", user_prompt)
+        self.assertIn("`primary_definition`", user_prompt)
 
     def test_can_include_style_guide_in_system_instruction(self):
         prompt = StoryPrompt(include_style_guide=True)

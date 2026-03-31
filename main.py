@@ -67,7 +67,7 @@ def main():
     parser.add_argument(
         "--enable_illustration",
         action="store_true",
-        help="Generate page-level illustrations from the generated story JSON.",
+        help="Generate a cover plus page-level illustrations from the story JSON.",
     )
     parser.add_argument(
         "--illustration_model",
@@ -76,8 +76,13 @@ def main():
     )
     parser.add_argument(
         "--illustration_aspect_ratio",
-        default="16:9",
-        help="Illustration aspect ratio when --enable_illustration is set (e.g. 16:9, 1:1, 3:4).",
+        default="1:1",
+        help="Interior illustration aspect ratio when --enable_illustration is set (e.g. 1:1, 4:3).",
+    )
+    parser.add_argument(
+        "--illustration_cover_aspect_ratio",
+        default="5:4",
+        help="Cover illustration aspect ratio when --enable_illustration is set (e.g. 5:4).",
     )
     parser.add_argument(
         "--illustration_request_interval_sec",
@@ -89,6 +94,11 @@ def main():
         "--illustration_skip_existing",
         action="store_true",
         help="Skip pages if page_XX.* already exists when --enable_illustration is set.",
+    )
+    parser.add_argument(
+        "--illustration_skip_cover",
+        action="store_true",
+        help="Skip cover generation and only create interior illustrations.",
     )
     
     args = parser.parse_args()
@@ -172,17 +182,19 @@ def main():
                     "Story JSON was generated, but illustration requires this key."
                 )
 
-            print("Generating page illustrations...")
+            print("Generating cover + page illustrations...")
             illustration_generator = IllustrationGenerator(
                 api_key=illustration_api_key,
                 model_name=args.illustration_model,
                 aspect_ratio=args.illustration_aspect_ratio,
+                cover_aspect_ratio=args.illustration_cover_aspect_ratio,
                 request_interval_sec=args.illustration_request_interval_sec,
             )
             illustration_result = illustration_generator.generate_from_story(
                 story=story,
                 output_dir=output_dir,
                 skip_existing=args.illustration_skip_existing,
+                generate_cover=not args.illustration_skip_cover,
             )
 
             print(
@@ -191,6 +203,7 @@ def main():
                 f"generated={illustration_result['generated']} "
                 f"skipped={illustration_result['skipped']} "
                 f"failed={illustration_result['failed']} "
+                f"cover_status={illustration_result['cover']['status']} "
                 f"manifest={illustration_result['manifest_path']}"
             )
 
