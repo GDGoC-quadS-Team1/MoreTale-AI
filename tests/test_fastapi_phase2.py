@@ -128,30 +128,35 @@ class TestFastAPIServerPhase2(unittest.TestCase):
     ):
         story_patch = (
             patch(
-                "app.api.stories.StoryService.generate_story",
+                "app.services.story_orchestrator.StoryService.generate_story",
                 side_effect=story_side_effect,
             )
             if story_side_effect is not None
             else patch(
-                "app.api.stories.StoryService.generate_story",
+                "app.services.story_orchestrator.StoryService.generate_story",
                 return_value=(_build_fake_story(), "gemini-2.5-flash"),
             )
         )
 
         with story_patch:
-            with patch("app.api.stories.make_story_id", return_value=story_id):
+            with patch("app.services.story_orchestrator.make_story_id", return_value=story_id):
                 tts_patch = (
-                    patch("app.api.stories.TTSService.generate_tts", side_effect=tts_side_effect)
+                    patch(
+                        "app.services.story_orchestrator.TTSService.generate_tts",
+                        side_effect=tts_side_effect,
+                    )
                     if tts_side_effect is not None
-                    else patch("app.api.stories.TTSService.generate_tts")
+                    else patch("app.services.story_orchestrator.TTSService.generate_tts")
                 )
                 illustration_patch = (
                     patch(
-                        "app.api.stories.IllustrationService.generate_illustrations",
+                        "app.services.story_orchestrator.IllustrationService.generate_illustrations",
                         side_effect=illustration_side_effect,
                     )
                     if illustration_side_effect is not None
-                    else patch("app.api.stories.IllustrationService.generate_illustrations")
+                    else patch(
+                        "app.services.story_orchestrator.IllustrationService.generate_illustrations"
+                    )
                 )
                 with tts_patch, illustration_patch:
                     return self.client.post(

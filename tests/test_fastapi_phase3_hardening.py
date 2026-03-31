@@ -115,10 +115,10 @@ class TestFastAPIServerPhase3Hardening(unittest.TestCase):
 
     def _post_story(self, story_id: str, payload: dict, headers: dict[str, str]):
         with patch(
-            "app.api.stories.StoryService.generate_story",
+            "app.services.story_orchestrator.StoryService.generate_story",
             return_value=(_build_fake_story(), "gemini-2.5-flash"),
         ):
-            with patch("app.api.stories.make_story_id", return_value=story_id):
+            with patch("app.services.story_orchestrator.make_story_id", return_value=story_id):
                 return self.client.post(
                     "/api/stories/",
                     json=payload,
