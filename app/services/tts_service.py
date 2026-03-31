@@ -6,7 +6,7 @@ from generators.story.story_model import Story
 from generators.tts.tts_generator import TTSGenerator
 
 from app.schemas.story import StoryCreateRequest
-from app.services.storage import get_run_dir
+from app.services.output_paths import get_run_dir
 
 
 class TTSService:
@@ -30,4 +30,3 @@ class TTSService:
             secondary_language=request.secondary_lang,
             skip_existing=True,
         )
-

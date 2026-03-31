@@ -2,6 +2,7 @@
 import argparse
 import json
 import re
+import sys
 from datetime import datetime
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -10,6 +11,12 @@ from urllib.parse import parse_qs, urlparse
 
 VIEWER_DIR = Path(__file__).resolve().parent
 OUTPUTS_DIR = VIEWER_DIR.parent
+ROOT_DIR = OUTPUTS_DIR.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from app.services.story_result_builder import build_story_result_payload
+
 RUN_GLOB = "*_story_*"
 STORY_GLOB = "story_*.json"
 RUN_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
@@ -207,83 +214,19 @@ def build_book_payload(run_id: str) -> dict:
     if run_dir is None:
         raise FileNotFoundError(f"run not found: {run_id}")
 
-    story_files = sorted(run_dir.glob(STORY_GLOB))
-    if not story_files:
-        raise FileNotFoundError(f"story json not found for run: {run_id}")
-
-    story = load_json(story_files[0])
-    pages = story.get("pages")
-    if not isinstance(pages, list):
-        raise ValueError("story json is missing a valid 'pages' list")
-
-    primary_language = str(story.get("primary_language", ""))
-    secondary_language = str(story.get("secondary_language", ""))
-    primary_slug = slugify_language_name(primary_language)
-    secondary_slug = slugify_language_name(secondary_language)
-    illustration_urls = load_illustration_url_map(run_dir=run_dir)
     illustration_aspect_ratio = load_illustration_aspect_ratio(run_dir=run_dir) or "1:1"
-
-    payload_pages: list[dict] = []
-    for index, page in enumerate(pages):
-        if not isinstance(page, dict):
-            continue
-
-        raw_page_number = page.get("page_number", index + 1)
-        try:
-            page_number = int(raw_page_number)
-        except (TypeError, ValueError):
-            page_number = index + 1
-
-        primary_rel = (
-            f"{run_id}/audio/01_{primary_slug}/page_{page_number:02d}_primary.wav"
-        )
-        secondary_rel = (
-            f"{run_id}/audio/02_{secondary_slug}/page_{page_number:02d}_secondary.wav"
-        )
-
-        primary_file = OUTPUTS_DIR / primary_rel
-        secondary_file = OUTPUTS_DIR / secondary_rel
-
-        has_primary_audio = primary_file.exists() and primary_file.is_file()
-        has_secondary_audio = secondary_file.exists() and secondary_file.is_file()
-        illustration_url = illustration_urls.get(page_number)
-
-        payload_pages.append(
-            {
-                "page_number": page_number,
-                "text_primary": str(page.get("text_primary", "")),
-                "text_secondary": str(page.get("text_secondary", "")),
-                "illustration_url": illustration_url,
-                "has_illustration": bool(illustration_url),
-                "illustration_prompt": str(page.get("illustration_prompt", "")),
-                "illustration_scene_prompt": str(
-                    page.get("illustration_scene_prompt", "")
-                ),
-                "audio_primary_url": f"/{primary_rel}" if has_primary_audio else None,
-                "audio_secondary_url": (
-                    f"/{secondary_rel}" if has_secondary_audio else None
-                ),
-                "has_primary_audio": has_primary_audio,
-                "has_secondary_audio": has_secondary_audio,
-            }
-        )
-
-    return {
-        "run_id": run_id,
-        "assets": {
-            "illustrations": {
-                "aspect_ratio": illustration_aspect_ratio,
-            }
-        },
-        "meta": {
-            "title_primary": str(story.get("title_primary", "")),
-            "title_secondary": str(story.get("title_secondary", "")),
-            "primary_language": primary_language,
-            "secondary_language": secondary_language,
-            "page_count": len(payload_pages),
-        },
-        "pages": payload_pages,
-    }
+    payload = build_story_result_payload(
+        story_id=run_id,
+        include_tts=(run_dir / "audio").exists(),
+        include_illustration=(run_dir / "illustrations").exists(),
+        include_cover_illustration=(run_dir / "illustrations").exists(),
+        illustration_aspect_ratio=illustration_aspect_ratio,
+        cover_aspect_ratio="5:4",
+        job_status="completed",
+        static_prefix="",
+    )
+    payload["run_id"] = payload["id"]
+    return payload
 
 
 class ViewerHandler(SimpleHTTPRequestHandler):
