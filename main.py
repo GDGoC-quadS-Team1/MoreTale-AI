@@ -1,20 +1,19 @@
-from generators.story.story_generator import StoryGenerator
-from generators.tts.tts_generator import TTSGenerator
-from generators.illustration.illustration_pipeline import IllustrationGenerator
-import sys
-import os
-import datetime
-import re
-
-def slugify(text):
-    """Converts text to a safe filename slug."""
-    text = text.lower()
-    text = re.sub(r'[^a-z0-9]+', '-', text)
-    return text.strip('-')
+from __future__ import annotations
 
 import argparse
+import datetime
+import sys
+import traceback
+from pathlib import Path
 
-def main():
+from app.services.generation_pipeline import (
+    StoryPipelineRequest,
+    run_story_generation_pipeline,
+)
+from app.services.output_paths import slugify
+
+
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Generate a bilingual fairy tale.")
     parser.add_argument("--child_name", required=True, help="Name of the child")
     parser.add_argument(
@@ -100,125 +99,79 @@ def main():
         action="store_true",
         help="Skip cover generation and only create interior illustrations.",
     )
-    
-    args = parser.parse_args()
+    return parser
+
+
+def build_pipeline_request(args: argparse.Namespace) -> StoryPipelineRequest:
+    return StoryPipelineRequest(
+        child_name=args.child_name,
+        child_age=args.child_age,
+        primary_lang=args.primary_lang,
+        secondary_lang=args.secondary_lang,
+        theme=args.theme,
+        extra_prompt=args.extra_prompt,
+        include_style_guide=args.include_style_guide,
+        story_model=args.model_name,
+        enable_tts=args.enable_tts,
+        tts_model=args.tts_model,
+        tts_voice=args.tts_voice,
+        tts_temperature=args.tts_temperature,
+        tts_request_interval_sec=args.tts_request_interval_sec,
+        enable_illustration=args.enable_illustration,
+        enable_cover_illustration=not args.illustration_skip_cover,
+        illustration_model=args.illustration_model,
+        illustration_aspect_ratio=args.illustration_aspect_ratio,
+        illustration_cover_aspect_ratio=args.illustration_cover_aspect_ratio,
+        illustration_request_interval_sec=args.illustration_request_interval_sec,
+        illustration_skip_existing=args.illustration_skip_existing,
+    )
+
+
+def main() -> None:
+    args = build_parser().parse_args()
+    pipeline_request = build_pipeline_request(args)
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    def output_dir_factory(story, _story_model: str) -> Path:
+        safe_title = slugify(story.title_primary)
+        return Path("outputs") / f"{timestamp}_story_{safe_title}"
 
     print("Generating bilingual fairy tale...")
-    
-    generator = StoryGenerator(
-        model_name=args.model_name,
-        include_style_guide=args.include_style_guide,
-    ) 
-    
+
     try:
-        story = generator.generate_story(
-            child_name=args.child_name,
-            child_age=args.child_age,
-            primary_lang=args.primary_lang,
-            secondary_lang=args.secondary_lang,
-            theme=args.theme,
-            extra_prompt=args.extra_prompt
+        result = run_story_generation_pipeline(
+            request=pipeline_request,
+            output_dir_factory=output_dir_factory,
+            strict_assets=True,
         )
-        
-        print(f"Generated story: {story.title_primary}")
-        
-        # Create output directory
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        safe_title = slugify(story.title_primary)
-        # Including generator info in directory name as requested
-        output_dir = os.path.join("outputs", f"{timestamp}_story_{safe_title}")
-        os.makedirs(output_dir, exist_ok=True)
-        
-        # Save story JSON
-        filename = f"story_{generator.model_name}.json"
-        filepath = os.path.join(output_dir, filename)
-        
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(story.model_dump_json(indent=4))
-            
-        print(f"Story saved to: {filepath}")
 
-        if args.enable_tts:
-            tts_api_key = os.getenv("GEMINI_TTS_API_KEY")
-            if not tts_api_key:
-                raise ValueError(
-                    "GEMINI_TTS_API_KEY environment variable not set. "
-                    "Story JSON was generated, but TTS requires this key."
-                )
+        print(f"Generated story: {result.story.title_primary}")
+        print(f"Story saved to: {result.story_json_path}")
 
-            print("Generating audiobook WAV files...")
-            tts_generator = TTSGenerator(
-                api_key=tts_api_key,
-                model_name=args.tts_model,
-                voice_name=args.tts_voice,
-                temperature=args.tts_temperature,
-                request_interval_sec=args.tts_request_interval_sec,
-            )
-            tts_result = tts_generator.generate_book_audio(
-                story=story,
-                output_dir=output_dir,
-                primary_language=args.primary_lang,
-                secondary_language=args.secondary_lang,
-                skip_existing=True,
-            )
-
+        if pipeline_request.enable_tts and result.tts_result is not None:
             print(
                 "TTS summary: "
-                f"total={tts_result['total_tasks']} "
-                f"generated={tts_result['generated']} "
-                f"skipped={tts_result['skipped']} "
-                f"failed={tts_result['failed']}"
+                f"total={result.tts_result['total_tasks']} "
+                f"generated={result.tts_result['generated']} "
+                f"skipped={result.tts_result['skipped']} "
+                f"failed={result.tts_result['failed']}"
             )
 
-            if tts_result["failed"] > 0:
-                failures = "\n".join(tts_result["failures"])
-                raise RuntimeError(f"TTS generation failed.\n{failures}")
-
-        if args.enable_illustration:
-            illustration_api_key = os.getenv("NANO_BANANA_KEY")
-            if not illustration_api_key:
-                raise ValueError(
-                    "NANO_BANANA_KEY environment variable not set. "
-                    "Story JSON was generated, but illustration requires this key."
-                )
-
-            print("Generating cover + page illustrations...")
-            illustration_generator = IllustrationGenerator(
-                api_key=illustration_api_key,
-                model_name=args.illustration_model,
-                aspect_ratio=args.illustration_aspect_ratio,
-                cover_aspect_ratio=args.illustration_cover_aspect_ratio,
-                request_interval_sec=args.illustration_request_interval_sec,
-            )
-            illustration_result = illustration_generator.generate_from_story(
-                story=story,
-                output_dir=output_dir,
-                skip_existing=args.illustration_skip_existing,
-                generate_cover=not args.illustration_skip_cover,
-            )
-
+        if pipeline_request.enable_illustration and result.illustration_result is not None:
             print(
                 "Illustration summary: "
-                f"total={illustration_result['total_tasks']} "
-                f"generated={illustration_result['generated']} "
-                f"skipped={illustration_result['skipped']} "
-                f"failed={illustration_result['failed']} "
-                f"cover_status={illustration_result['cover']['status']} "
-                f"manifest={illustration_result['manifest_path']}"
+                f"total={result.illustration_result['total_tasks']} "
+                f"generated={result.illustration_result['generated']} "
+                f"skipped={result.illustration_result['skipped']} "
+                f"failed={result.illustration_result['failed']} "
+                f"cover_status={result.illustration_result['cover']['status']} "
+                f"manifest={result.illustration_result['manifest_path']}"
             )
-
-            if illustration_result["failed"] > 0:
-                raise RuntimeError(
-                    "Illustration generation failed. "
-                    f"See manifest: {illustration_result['manifest_path']}"
-                )
-        
-    except Exception as e:
-        print(f"Pipeline failed: {e}")
-        # Print full traceback for debugging
-        import traceback
+    except Exception as error:
+        print(f"Pipeline failed: {error}")
         traceback.print_exc()
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
