@@ -4,22 +4,40 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from generators.illustration.illustration_generator import (
-    IllustrationGenerator,
-    _resolve_api_key,
+try:
+    from generators.illustration.illustration_generator import (
+        IllustrationGenerator,
+        _resolve_api_key,
+    )
+    from generators.illustration.illustration_cover_prompt import build_cover_prompt
+except ModuleNotFoundError:  # pragma: no cover
+    IllustrationGenerator = None
+    _resolve_api_key = None
+    build_cover_prompt = None
+
+
+if IllustrationGenerator is not None:
+    class _FakeIllustrationGenerator(IllustrationGenerator):
+        def __init__(self):
+            super().__init__(api_key="dummy", client=SimpleNamespace(models=None))
+            self.seen_requests: list[tuple[str, str | None]] = []
+
+        def _generate_image_bytes(
+            self,
+            prompt: str,
+            *,
+            aspect_ratio: str | None = None,
+        ) -> tuple[bytes, str]:
+            self.seen_requests.append((prompt, aspect_ratio))
+            return b"fake-image-bytes", "image/png"
+else:  # pragma: no cover
+    _FakeIllustrationGenerator = None
+
+
+@unittest.skipIf(
+    IllustrationGenerator is None or _resolve_api_key is None or build_cover_prompt is None,
+    "illustration dependencies are not installed in this environment",
 )
-
-
-class _FakeIllustrationGenerator(IllustrationGenerator):
-    def __init__(self):
-        super().__init__(api_key="dummy", client=SimpleNamespace(models=None))
-        self.seen_prompts: list[str] = []
-
-    def _generate_image_bytes(self, prompt: str) -> tuple[bytes, str]:
-        self.seen_prompts.append(prompt)
-        return b"fake-image-bytes", "image/png"
-
-
 class TestIllustrationPromptBuild(unittest.TestCase):
     def test_resolve_api_key_uses_nano_banana_key(self):
         with patch.dict(os.environ, {"NANO_BANANA_KEY": "banana-key"}, clear=True):
@@ -67,9 +85,43 @@ class TestIllustrationPromptBuild(unittest.TestCase):
         self.assertEqual(mode, "full_only")
         self.assertEqual(prompt, "fallback full prompt")
 
+    def test_build_cover_prompt_forbids_visible_title_text(self):
+        story = SimpleNamespace(
+            title_primary="별빛 숲의 노래",
+            title_secondary="Song of the Starlit Forest",
+            illustration_prefix="Dreamy watercolor, Main character",
+            image_style="Dreamy watercolor",
+            main_character_design="Main character",
+            pages=[
+                SimpleNamespace(
+                    illustration_prompt="full prompt 1",
+                    illustration_scene_prompt="A lantern glows beside a quiet forest path.",
+                ),
+                SimpleNamespace(
+                    illustration_prompt="full prompt 2",
+                    illustration_scene_prompt="The child looks up at floating lights over a lake.",
+                ),
+                SimpleNamespace(
+                    illustration_prompt="full prompt 3",
+                    illustration_scene_prompt="Friends gather under a bright moon near tall trees.",
+                ),
+            ],
+        )
 
+        prompt = build_cover_prompt(story)
+
+        self.assertNotIn("별빛 숲의 노래", prompt)
+        self.assertNotIn("Song of the Starlit Forest", prompt)
+        self.assertIn("Do not render any visible text", prompt)
+        self.assertIn("Hangul", prompt)
+
+
+@unittest.skipIf(
+    IllustrationGenerator is None or _FakeIllustrationGenerator is None,
+    "illustration dependencies are not installed in this environment",
+)
 class TestIllustrationGenerationPipeline(unittest.TestCase):
-    def test_generate_from_story_creates_page_images_and_manifest(self):
+    def test_generate_from_story_creates_page_images_cover_and_manifest(self):
         generator = _FakeIllustrationGenerator()
         story = SimpleNamespace(
             pages=[
@@ -85,6 +137,7 @@ class TestIllustrationGenerationPipeline(unittest.TestCase):
                 ),
             ],
             illustration_prefix="prefix",
+            cover_illustration_prompt="storybook cover prompt",
             image_style="style",
             main_character_design="design",
         )
@@ -96,7 +149,8 @@ class TestIllustrationGenerationPipeline(unittest.TestCase):
                 skip_existing=False,
             )
 
-            self.assertEqual(result["generated"], 2)
+            self.assertEqual(result["total_tasks"], 3)
+            self.assertEqual(result["generated"], 3)
             self.assertEqual(result["failed"], 0)
             self.assertTrue(
                 os.path.exists(os.path.join(tmp_dir, "illustrations", "page_01.png"))
@@ -105,11 +159,18 @@ class TestIllustrationGenerationPipeline(unittest.TestCase):
                 os.path.exists(os.path.join(tmp_dir, "illustrations", "page_02.png"))
             )
             self.assertTrue(
+                os.path.exists(os.path.join(tmp_dir, "illustrations", "cover.png"))
+            )
+            self.assertTrue(
                 os.path.exists(os.path.join(tmp_dir, "illustrations", "manifest.json"))
             )
-            self.assertEqual(len(generator.seen_prompts), 2)
+            self.assertEqual(result["cover"]["status"], "generated")
+            self.assertEqual(len(generator.seen_requests), 3)
+            self.assertEqual(generator.seen_requests[0][1], None)
+            self.assertEqual(generator.seen_requests[1][1], None)
+            self.assertEqual(generator.seen_requests[2][1], "5:4")
 
-    def test_generate_from_story_skips_existing_page(self):
+    def test_generate_from_story_skips_existing_page_and_cover(self):
         generator = _FakeIllustrationGenerator()
         story = SimpleNamespace(
             pages=[
@@ -120,15 +181,20 @@ class TestIllustrationGenerationPipeline(unittest.TestCase):
                 )
             ],
             illustration_prefix="prefix",
+            cover_illustration_prompt="storybook cover prompt",
             image_style="style",
             main_character_design="design",
         )
 
         with tempfile.TemporaryDirectory() as tmp_dir:
-            existing_path = os.path.join(tmp_dir, "illustrations", "page_01.png")
-            os.makedirs(os.path.dirname(existing_path), exist_ok=True)
+            illustrations_dir = os.path.join(tmp_dir, "illustrations")
+            os.makedirs(illustrations_dir, exist_ok=True)
+            existing_path = os.path.join(illustrations_dir, "page_01.png")
             with open(existing_path, "wb") as file:
                 file.write(b"existing")
+            existing_cover_path = os.path.join(illustrations_dir, "cover.png")
+            with open(existing_cover_path, "wb") as file:
+                file.write(b"existing cover")
 
             result = generator.generate_from_story(
                 story=story,
@@ -137,8 +203,9 @@ class TestIllustrationGenerationPipeline(unittest.TestCase):
             )
 
             self.assertEqual(result["generated"], 0)
-            self.assertEqual(result["skipped"], 1)
-            self.assertEqual(len(generator.seen_prompts), 0)
+            self.assertEqual(result["skipped"], 2)
+            self.assertEqual(result["cover"]["status"], "skipped_exists")
+            self.assertEqual(len(generator.seen_requests), 0)
 
 
 if __name__ == "__main__":

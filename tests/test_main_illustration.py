@@ -4,7 +4,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-import main
+try:
+    import main
+except ModuleNotFoundError:  # pragma: no cover
+    main = None
 
 
 class _FakeStory:
@@ -30,6 +33,10 @@ class _FakeStoryGenerator:
         return _FakeStory()
 
 
+@unittest.skipIf(
+    main is None,
+    "CLI dependencies are not installed in this environment",
+)
 class TestMainIllustration(unittest.TestCase):
     def test_enable_illustration_requires_api_key(self):
         args = [
@@ -72,10 +79,17 @@ class TestMainIllustration(unittest.TestCase):
 
         fake_illustration_instance = unittest.mock.Mock()
         fake_illustration_instance.generate_from_story.return_value = {
-            "total_tasks": 24,
-            "generated": 24,
+            "total_tasks": 25,
+            "generated": 25,
             "skipped": 0,
             "failed": 0,
+            "cover": {
+                "enabled": True,
+                "status": "generated",
+                "error": None,
+                "path": "outputs/illustrations/cover.png",
+                "aspect_ratio": "5:4",
+            },
             "manifest_path": "outputs/illustrations/manifest.json",
         }
 
@@ -101,7 +115,11 @@ class TestMainIllustration(unittest.TestCase):
                 )
                 self.assertEqual(
                     mocked_illustration.call_args.kwargs["aspect_ratio"],
-                    "16:9",
+                    "1:1",
+                )
+                self.assertEqual(
+                    mocked_illustration.call_args.kwargs["cover_aspect_ratio"],
+                    "5:4",
                 )
                 self.assertEqual(
                     mocked_illustration.call_args.kwargs["request_interval_sec"],
@@ -111,6 +129,10 @@ class TestMainIllustration(unittest.TestCase):
                 self.assertEqual(
                     fake_illustration_instance.generate_from_story.call_args.kwargs["skip_existing"],
                     False,
+                )
+                self.assertEqual(
+                    fake_illustration_instance.generate_from_story.call_args.kwargs["generate_cover"],
+                    True,
                 )
             finally:
                 os.chdir(original_cwd)
