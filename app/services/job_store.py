@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from app.services.storage import get_run_dir
+from app.services.output_paths import get_run_dir
 
 _META_FILE_NAME = "meta.json"
 _LOCK = threading.Lock()

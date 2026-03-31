@@ -6,7 +6,7 @@ from generators.illustration.illustration_pipeline import IllustrationGenerator
 from generators.story.story_model import Story
 
 from app.schemas.story import StoryCreateRequest
-from app.services.storage import get_run_dir
+from app.services.output_paths import get_run_dir
 
 
 class IllustrationService:
