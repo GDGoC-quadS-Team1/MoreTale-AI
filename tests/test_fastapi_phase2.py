@@ -16,10 +16,11 @@ except ModuleNotFoundError:  # pragma: no cover
     create_app = None
 
 try:
-    from generators.story.story_model import Page, Story
+    from generators.story.story_model import Page, Story, VocabularyEntry
 except ModuleNotFoundError:  # pragma: no cover
     Page = None
     Story = None
+    VocabularyEntry = None
 
 try:
     from app.services.job_store import JobStore
@@ -38,6 +39,15 @@ def _build_fake_story():
             text_secondary=f"Secondary text {page_number}",
             illustration_prompt=f"Illustration prompt {page_number}",
             illustration_scene_prompt=f"Scene prompt {page_number}",
+            vocabulary=[
+                VocabularyEntry(
+                    entry_id=f"page-{page_number}-dragon",
+                    primary_word="dragon",
+                    secondary_word="용",
+                    primary_definition="a large creature from stories",
+                    secondary_definition="이야기 속 상상의 큰 동물",
+                )
+            ],
         )
         for page_number in range(1, 25)
     ]
@@ -64,6 +74,7 @@ def _write_json(path: Path, payload: dict) -> None:
     or create_app is None
     or Story is None
     or Page is None
+    or VocabularyEntry is None
     or JobStore is None
     or get_run_dir is None
     or write_story_json is None,
@@ -278,9 +289,79 @@ class TestFastAPIServerPhase2(unittest.TestCase):
         self.assertEqual(result_response.status_code, 200)
         body = result_response.json()
         self.assertTrue(body["assets"]["has_partial_failures"])
+        self.assertEqual(body["assets"]["cover"]["status"], "missing")
         failed_page = body["pages"][0]
         self.assertEqual(failed_page["illustration_status"], "failed")
         self.assertEqual(failed_page["illustration_error"], "illustration api timeout")
+
+    def test_cover_illustration_is_exposed_in_result_payload(self) -> None:
+        payload = self._base_payload()
+        payload["generation"]["enable_illustration"] = True
+        story_id = "20260221_130002_story_mina-cover"
+
+        def illustration_with_cover(*, request, story_id, story):
+            del request, story
+            run_dir = get_run_dir(story_id)
+            illustrations_dir = run_dir / "illustrations"
+            illustrations_dir.mkdir(parents=True, exist_ok=True)
+            cover_path = illustrations_dir / "cover.png"
+            page_path = illustrations_dir / "page_01.png"
+            cover_path.write_bytes(b"\x89PNG")
+            page_path.write_bytes(b"\x89PNG")
+            _write_json(
+                illustrations_dir / "manifest.json",
+                {
+                    "total_tasks": 25,
+                    "generated": 2,
+                    "skipped": 0,
+                    "failed": 0,
+                    "entries": [
+                        {
+                            "asset_type": "cover",
+                            "status": "generated",
+                            "path": str(cover_path),
+                        },
+                        {
+                            "asset_type": "page",
+                            "page_number": 1,
+                            "status": "generated",
+                            "path": str(page_path),
+                        },
+                    ],
+                },
+            )
+            return {
+                "total_tasks": 25,
+                "generated": 2,
+                "skipped": 0,
+                "failed": 0,
+                "cover": {
+                    "enabled": True,
+                    "status": "generated",
+                    "error": None,
+                    "path": str(cover_path),
+                    "aspect_ratio": "5:4",
+                },
+            }
+
+        create_response = self._create_story_with_patches(
+            story_id=story_id,
+            payload=payload,
+            illustration_side_effect=illustration_with_cover,
+        )
+        self.assertEqual(create_response.status_code, 202)
+
+        result_response = self.client.get(
+            f"/api/stories/{story_id}/result",
+            headers=self.headers,
+        )
+        self.assertEqual(result_response.status_code, 200)
+        body = result_response.json()
+        self.assertEqual(body["assets"]["cover"]["status"], "generated")
+        self.assertEqual(body["assets"]["cover"]["aspect_ratio"], "5:4")
+        self.assertTrue(body["assets"]["cover"]["has_cover"])
+        self.assertIsNotNone(body["assets"]["cover"]["url"])
+        self.assertEqual(body["assets"]["illustrations"]["aspect_ratio"], "1:1")
 
     def test_tts_service_error_keeps_completed_and_sets_service_error(self) -> None:
         payload = self._base_payload()
@@ -307,9 +388,70 @@ class TestFastAPIServerPhase2(unittest.TestCase):
         )
         self.assertTrue(status_body["result"]["assets"]["has_partial_failures"])
 
+    def test_vocabulary_manifest_populates_pronunciation_urls(self) -> None:
+        payload = self._base_payload()
+        story_id = "20260221_130004_story_mina-vocabulary"
+
+        create_response = self._create_story_with_patches(
+            story_id=story_id,
+            payload=payload,
+        )
+        self.assertEqual(create_response.status_code, 202)
+
+        run_dir = get_run_dir(story_id)
+        vocabulary_dir = run_dir / "vocabulary" / "page_01"
+        vocabulary_dir.mkdir(parents=True, exist_ok=True)
+        primary_audio = vocabulary_dir / "page-1-dragon_primary.wav"
+        secondary_audio = vocabulary_dir / "page-1-dragon_secondary.wav"
+        primary_audio.write_bytes(b"RIFF")
+        secondary_audio.write_bytes(b"RIFF")
+        _write_json(
+            run_dir / "vocabulary" / "manifest.json",
+            {
+                "entries": [
+                    {
+                        "page_number": 1,
+                        "entry_id": "page-1-dragon",
+                        "role": "primary",
+                        "path": str(primary_audio),
+                        "status": "generated",
+                    },
+                    {
+                        "page_number": 1,
+                        "entry_id": "page-1-dragon",
+                        "role": "secondary",
+                        "path": str(secondary_audio),
+                        "status": "generated",
+                    },
+                ]
+            },
+        )
+
+        result_response = self.client.get(
+            f"/api/stories/{story_id}/result",
+            headers=self.headers,
+        )
+        self.assertEqual(result_response.status_code, 200)
+        body = result_response.json()
+        pronunciation = body["pages"][0]["vocabulary"][0]["pronunciation"]
+        self.assertEqual(pronunciation["primary_status"], "generated")
+        self.assertEqual(pronunciation["secondary_status"], "generated")
+        self.assertTrue(pronunciation["has_primary_audio"])
+        self.assertTrue(pronunciation["has_secondary_audio"])
+        self.assertTrue(
+            pronunciation["primary_url"].endswith(
+                f"/{story_id}/vocabulary/page_01/page-1-dragon_primary.wav"
+            )
+        )
+        self.assertTrue(
+            pronunciation["secondary_url"].endswith(
+                f"/{story_id}/vocabulary/page_01/page-1-dragon_secondary.wav"
+            )
+        )
+
     def test_story_generation_failure_returns_404_on_result(self) -> None:
         payload = self._base_payload()
-        story_id = "20260221_130004_story_mina-friendship"
+        story_id = "20260221_130005_story_mina-friendship"
 
         create_response = self._create_story_with_patches(
             story_id=story_id,
@@ -334,9 +476,9 @@ class TestFastAPIServerPhase2(unittest.TestCase):
 
     def test_result_returns_409_for_not_ready_statuses(self) -> None:
         payload = self._base_payload()
-        queued_id = "20260221_130005_story_queued"
-        running_id = "20260221_130006_story_running"
-        canceled_id = "20260221_130007_story_canceled"
+        queued_id = "20260221_130006_story_queued"
+        running_id = "20260221_130007_story_running"
+        canceled_id = "20260221_130008_story_canceled"
 
         self.job_store.initialize_job(story_id=queued_id, request_payload=payload)
         self.job_store.initialize_job(story_id=running_id, request_payload=payload)
@@ -354,7 +496,7 @@ class TestFastAPIServerPhase2(unittest.TestCase):
 
     def test_failed_with_existing_story_json_returns_result(self) -> None:
         payload = self._base_payload()
-        story_id = "20260221_130008_story_failed-with-json"
+        story_id = "20260221_130009_story_failed-with-json"
         self.job_store.initialize_job(story_id=story_id, request_payload=payload)
         write_story_json(
             story_id=story_id,

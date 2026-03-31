@@ -1,6 +1,6 @@
 import unittest
 
-from generators.story.story_model import Page, Story
+from generators.story.story_model import Page, Story, VocabularyEntry
 
 
 class TestStoryValidation(unittest.TestCase):
@@ -58,6 +58,24 @@ class TestStoryValidation(unittest.TestCase):
             )
 
         self.assertIn("Story must have exactly 24 pages", str(context.exception))
+
+    def test_page_accepts_bilingual_vocabulary_entries(self):
+        page = self.valid_page.model_copy(
+            update={
+                "vocabulary": [
+                    VocabularyEntry(
+                        primary_word="dragon",
+                        secondary_word="용",
+                        primary_definition="a large creature from stories",
+                        secondary_definition="이야기 속에 나오는 큰 상상 동물",
+                    )
+                ]
+            }
+        )
+
+        self.assertEqual(len(page.vocabulary), 1)
+        self.assertEqual(page.vocabulary[0].primary_word, "dragon")
+        self.assertEqual(page.vocabulary[0].secondary_word, "용")
 
 
 if __name__ == "__main__":

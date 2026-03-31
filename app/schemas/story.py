@@ -25,8 +25,10 @@ class GenerationOptions(BaseModel):
     tts_temperature: float = Field(default=1.0)
     tts_request_interval_sec: float = Field(default=10.0)
     enable_illustration: bool = Field(default=False)
+    enable_cover_illustration: bool = Field(default=True)
     illustration_model: str = Field(default="gemini-2.5-flash-image")
-    illustration_aspect_ratio: str = Field(default="16:9")
+    illustration_aspect_ratio: str = Field(default="1:1")
+    illustration_cover_aspect_ratio: str = Field(default="5:4")
     illustration_request_interval_sec: float = Field(default=1.0)
     illustration_skip_existing: bool = Field(default=True)
 
@@ -138,7 +140,30 @@ class StoryStatusResponse(BaseModel):
     error: StoryError | None = None
 
 
+class VocabularyPronunciationResponse(BaseModel):
+    primary_url: str | None = None
+    secondary_url: str | None = None
+    primary_status: AssetStatus = "not_requested"
+    primary_error: str | None = None
+    secondary_status: AssetStatus = "not_requested"
+    secondary_error: str | None = None
+    has_primary_audio: bool = False
+    has_secondary_audio: bool = False
+
+
+class VocabularyEntryResponse(BaseModel):
+    entry_id: str = ""
+    primary_word: str
+    secondary_word: str
+    primary_definition: str = ""
+    secondary_definition: str = ""
+    pronunciation: VocabularyPronunciationResponse = Field(
+        default_factory=VocabularyPronunciationResponse
+    )
+
+
 class StoryPageResponse(BaseModel):
+
     page_number: int
     text_primary: str
     text_secondary: str
@@ -156,6 +181,7 @@ class StoryPageResponse(BaseModel):
     has_primary_audio: bool = False
     has_secondary_audio: bool = False
     has_illustration: bool = False
+    vocabulary: list[VocabularyEntryResponse] = Field(default_factory=list)
 
 
 class StoryResultMetaResponse(BaseModel):
@@ -172,13 +198,25 @@ class StoryAssetSummaryResponse(BaseModel):
     generated: int
     skipped: int
     failed: int
+    aspect_ratio: str | None = None
     manifest_url: str | None = None
     service_error: str | None = None
+
+
+class StoryCoverAssetResponse(BaseModel):
+    enabled: bool = False
+    url: str | None = None
+    status: AssetStatus = "not_requested"
+    error: str | None = None
+    prompt: str = ""
+    aspect_ratio: str = "5:4"
+    has_cover: bool = False
 
 
 class StoryAssetsResponse(BaseModel):
     tts: StoryAssetSummaryResponse
     illustrations: StoryAssetSummaryResponse
+    cover: StoryCoverAssetResponse
     has_partial_failures: bool
 
 

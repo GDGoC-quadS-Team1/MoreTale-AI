@@ -19,10 +19,11 @@ except ModuleNotFoundError:  # pragma: no cover
     post_stories_rate_limiter = None
 
 try:
-    from generators.story.story_model import Page, Story
+    from generators.story.story_model import Page, Story, VocabularyEntry
 except ModuleNotFoundError:  # pragma: no cover
     Page = None
     Story = None
+    VocabularyEntry = None
 
 
 def _build_fake_story():
@@ -33,6 +34,15 @@ def _build_fake_story():
             text_secondary=f"Secondary text {page_number}",
             illustration_prompt=f"Illustration prompt {page_number}",
             illustration_scene_prompt=f"Scene prompt {page_number}",
+            vocabulary=[
+                VocabularyEntry(
+                    entry_id=f"page-{page_number}-dragon",
+                    primary_word="dragon",
+                    secondary_word="용",
+                    primary_definition="a large creature from stories",
+                    secondary_definition="이야기 속 상상의 큰 동물",
+                )
+            ],
         )
         for page_number in range(1, 25)
     ]
@@ -53,7 +63,8 @@ def _build_fake_story():
     or create_app is None
     or post_stories_rate_limiter is None
     or Page is None
-    or Story is None,
+    or Story is None
+    or VocabularyEntry is None,
     "fastapi/pydantic dependencies are not installed in this environment",
 )
 class TestFastAPIServerPhase3Hardening(unittest.TestCase):
@@ -230,9 +241,12 @@ class TestFastAPIServerPhase3Hardening(unittest.TestCase):
         body = result_response.json()
         self.assertIn("assets", body)
         self.assertIn("has_partial_failures", body["assets"])
+        self.assertIn("cover", body["assets"])
         self.assertIn("audio_primary_status", body["pages"][0])
         self.assertIn("audio_secondary_status", body["pages"][0])
         self.assertIn("illustration_status", body["pages"][0])
+        self.assertIn("vocabulary", body["pages"][0])
+        self.assertIn("pronunciation", body["pages"][0]["vocabulary"][0])
 
 
 if __name__ == "__main__":
