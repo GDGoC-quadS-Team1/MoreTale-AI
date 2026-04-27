@@ -1,5 +1,6 @@
 const runSelectEl = document.getElementById("run-select");
 const runPickerEl = document.querySelector(".run-picker");
+const pageSelectEl = document.getElementById("page-select");
 const statusEl = document.getElementById("status");
 const pageViewEl = document.getElementById("page-view");
 const pageCardEl = document.getElementById("page-card");
@@ -13,7 +14,10 @@ const modeBothEl = document.getElementById("mode-both");
 const modePrimaryLabelEl = document.getElementById("mode-primary-label");
 const modeSecondaryLabelEl = document.getElementById("mode-secondary-label");
 
+const autoplayToggleEl = document.getElementById("autoplay-toggle");
 const soundToggleEl = document.getElementById("sound-toggle");
+const printViewLinkEl = document.getElementById("print-view-link");
+const quizViewLinkEl = document.getElementById("quiz-view-link");
 const playBtnEl = document.getElementById("play-btn");
 const playPrimaryBtnEl = document.getElementById("play-primary-btn");
 const playSecondaryBtnEl = document.getElementById("play-secondary-btn");
@@ -31,6 +35,7 @@ const pageIndicatorEl = document.getElementById("page-indicator");
 
 const PAGE_TURN_MS = 360;
 const MAX_VISIBLE_DOTS = 9;
+const AUTOPLAY_SILENT_DELAY_MS = 1400;
 
 const state = {
   runs: [],
@@ -39,6 +44,11 @@ const state = {
   isTurning: false,
   textMode: "secondary",
   soundEnabled: true,
+  autoplayActive: false,
+  autoplaySessionId: 0,
+  autoplayFallbackTimer: null,
+  autoplayFallbackResolver: null,
+  audioWaiters: new Set(),
 };
 
 function normalizeAspectRatio(value, fallback = "1 / 1") {
@@ -62,6 +72,20 @@ function showBook() {
   pageViewEl.classList.remove("hidden");
 }
 
+function getRequestedRunId() {
+  return new URLSearchParams(window.location.search).get("run")?.trim() || "";
+}
+
+function updateRunQuery(runId) {
+  const nextUrl = new URL(window.location.href);
+  if (runId) {
+    nextUrl.searchParams.set("run", runId);
+  } else {
+    nextUrl.searchParams.delete("run");
+  }
+  window.history.replaceState({}, "", `${nextUrl.pathname}${nextUrl.search}`);
+}
+
 function getBookLanguages() {
   const primary = state.book?.meta?.primary_language || "한국어";
   const secondary = state.book?.meta?.secondary_language || "English";
@@ -75,9 +99,50 @@ function getCurrentPage() {
   return state.book.pages[state.pageIndex] || null;
 }
 
+function releaseAudioWaiters(result = { cancelled: true }) {
+  if (state.audioWaiters.size <= 0) {
+    return;
+  }
+
+  const pendingResolvers = Array.from(state.audioWaiters);
+  state.audioWaiters.clear();
+  pendingResolvers.forEach((resolve) => resolve(result));
+}
+
 function pauseAudio() {
   speechAudioEl.pause();
   speechAudioEl.currentTime = 0;
+  releaseAudioWaiters({ cancelled: true });
+}
+
+function clearAutoplayFallbackTimer() {
+  if (state.autoplayFallbackTimer !== null) {
+    window.clearTimeout(state.autoplayFallbackTimer);
+    state.autoplayFallbackTimer = null;
+  }
+
+  if (state.autoplayFallbackResolver) {
+    const resolve = state.autoplayFallbackResolver;
+    state.autoplayFallbackResolver = null;
+    resolve(false);
+  }
+}
+
+function stopAutoplay({ pauseAudioPlayback = true, clearStatus = false } = {}) {
+  const wasRunning = state.autoplayActive || state.autoplayFallbackTimer !== null;
+  state.autoplayActive = false;
+  state.autoplaySessionId += 1;
+  clearAutoplayFallbackTimer();
+
+  if (pauseAudioPlayback) {
+    pauseAudio();
+  }
+
+  updateAutoplayToggle();
+
+  if (wasRunning && clearStatus) {
+    setStatus("");
+  }
 }
 
 function updateSoundToggle() {
@@ -97,6 +162,19 @@ function updateModeButtons() {
   modePrimaryEl.setAttribute("aria-selected", String(isPrimary));
   modeSecondaryEl.setAttribute("aria-selected", String(isSecondary));
   modeBothEl.setAttribute("aria-selected", String(isBoth));
+}
+
+function updatePrintViewLink() {
+  const runId = state.book?.run_id || runSelectEl.value || "";
+  printViewLinkEl.href = runId
+    ? `/viewer/print.html?run=${encodeURIComponent(runId)}`
+    : "/viewer/print.html";
+
+  if (quizViewLinkEl) {
+    quizViewLinkEl.href = runId
+      ? `/viewer/quiz.html?run=${encodeURIComponent(runId)}`
+      : "/viewer/quiz.html";
+  }
 }
 
 function getActiveAudioUrl(page) {
@@ -130,6 +208,7 @@ function updatePlayControls(page) {
   const isBothMode = state.textMode === "both";
   const { primary, secondary } = getBookLanguages();
   const audioUrls = getAudioUrls(page);
+  const shouldDisable = !state.soundEnabled || state.autoplayActive;
 
   playBtnEl.classList.toggle("hidden", isBothMode);
   playPrimaryBtnEl.classList.toggle("hidden", !isBothMode);
@@ -142,8 +221,51 @@ function updatePlayControls(page) {
   playPrimaryBtnEl.textContent = `${primary} ▶`;
   playSecondaryBtnEl.textContent = `${secondary} ▶`;
 
-  playPrimaryBtnEl.disabled = !state.soundEnabled || !audioUrls.primary;
-  playSecondaryBtnEl.disabled = !state.soundEnabled || !audioUrls.secondary;
+  playPrimaryBtnEl.disabled = shouldDisable || !audioUrls.primary;
+  playSecondaryBtnEl.disabled = shouldDisable || !audioUrls.secondary;
+}
+
+function fillPageOptions() {
+  pageSelectEl.innerHTML = "";
+
+  const pages = state.book?.pages || [];
+  if (pages.length <= 0) {
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "페이지 선택";
+    pageSelectEl.appendChild(placeholder);
+    pageSelectEl.disabled = true;
+    return;
+  }
+
+  pages.forEach((page, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = `${page.page_number || index + 1} 페이지`;
+    pageSelectEl.appendChild(option);
+  });
+
+  pageSelectEl.disabled = false;
+  pageSelectEl.value = String(state.pageIndex);
+}
+
+function syncPagePicker() {
+  const hasBook = Boolean(state.book?.pages?.length);
+  pageSelectEl.disabled = !hasBook || state.isTurning;
+
+  if (!hasBook) {
+    pageSelectEl.value = "";
+    return;
+  }
+
+  pageSelectEl.value = String(state.pageIndex);
+}
+
+function updateAutoplayToggle() {
+  const hasBook = Boolean(state.book?.pages?.length);
+  autoplayToggleEl.disabled = !hasBook || state.isTurning || !state.soundEnabled;
+  autoplayToggleEl.classList.toggle("is-active", state.autoplayActive);
+  autoplayToggleEl.textContent = state.autoplayActive ? "자동재생 일시정지" : "자동재생 시작";
 }
 
 function setNavState() {
@@ -155,8 +277,11 @@ function setNavState() {
 
   const page = getCurrentPage();
   const hasAudio = Boolean(getActiveAudioUrl(page));
-  playBtnEl.disabled = !hasBook || !hasAudio || !state.soundEnabled;
+  playBtnEl.disabled = !hasBook || !hasAudio || !state.soundEnabled || state.autoplayActive;
+
   updatePlayControls(page);
+  syncPagePicker();
+  updateAutoplayToggle();
 }
 
 function renderIllustration(url) {
@@ -236,11 +361,7 @@ function renderStoryText(page) {
     return;
   }
 
-  if (state.textMode === "primary") {
-    activeLanguagePillEl.textContent = primary;
-  } else {
-    activeLanguagePillEl.textContent = secondary;
-  }
+  activeLanguagePillEl.textContent = state.textMode === "primary" ? primary : secondary;
 
   const paragraph = document.createElement("p");
   paragraph.className = "story-paragraph";
@@ -314,16 +435,18 @@ function animatePageTurn(direction) {
 function renderHeader() {
   const title = state.book?.meta?.title_primary || "(제목 없음)";
   const subtitle = state.book?.meta?.title_secondary || "";
-
   const titleTextEl = bookTitleEl.querySelector("span");
+
   if (titleTextEl) {
     titleTextEl.textContent = title;
   }
+
   bookSubtitleEl.textContent = subtitle;
 
   const { primary, secondary } = getBookLanguages();
   modePrimaryLabelEl.textContent = primary;
   modeSecondaryLabelEl.textContent = secondary;
+  document.title = `${title} | MoreTale Story Viewer`;
 }
 
 function renderPage(direction = null) {
@@ -351,12 +474,13 @@ function renderPage(direction = null) {
 
   updateModeButtons();
   updateSoundToggle();
+  updatePrintViewLink();
   setNavState();
   showBook();
   animatePageTurn(direction);
 }
 
-function moveToPage(nextIndex) {
+function moveToPage(nextIndex, { cancelAutoplay = true } = {}) {
   if (!state.book?.pages?.length || state.isTurning) {
     return;
   }
@@ -369,14 +493,72 @@ function moveToPage(nextIndex) {
     return;
   }
 
-  pauseAudio();
+  if (cancelAutoplay) {
+    stopAutoplay({ pauseAudioPlayback: true, clearStatus: true });
+  } else {
+    pauseAudio();
+  }
 
   const direction = nextIndex > state.pageIndex ? "next" : "prev";
   state.pageIndex = nextIndex;
   renderPage(direction);
 }
 
+function waitForAudioCompletion() {
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const finish = (result) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      speechAudioEl.removeEventListener("ended", handleEnded);
+      speechAudioEl.removeEventListener("error", handleError);
+      state.audioWaiters.delete(cancelWait);
+      resolve(result);
+    };
+
+    const handleEnded = () => {
+      finish({ ended: true });
+    };
+
+    const handleError = () => {
+      finish({ error: true });
+    };
+
+    const cancelWait = () => {
+      finish({ cancelled: true });
+    };
+
+    state.audioWaiters.add(cancelWait);
+    speechAudioEl.addEventListener("ended", handleEnded, { once: true });
+    speechAudioEl.addEventListener("error", handleError, { once: true });
+  });
+}
+
+async function playAudioUrl(audioUrl, errorLabel = "오디오") {
+  if (!audioUrl) {
+    return false;
+  }
+
+  try {
+    const completion = waitForAudioCompletion();
+    speechAudioEl.src = audioUrl;
+    speechAudioEl.currentTime = 0;
+    await speechAudioEl.play();
+    const result = await completion;
+    return Boolean(result.ended);
+  } catch (error) {
+    releaseAudioWaiters({ error: true });
+    console.error(`${errorLabel} playback failed`, error);
+    return false;
+  }
+}
+
 async function playCurrentAudio(preferredMode = null) {
+  stopAutoplay({ pauseAudioPlayback: true, clearStatus: true });
+
   if (!state.soundEnabled) {
     return;
   }
@@ -394,6 +576,8 @@ async function playCurrentAudio(preferredMode = null) {
     setStatus("현재 언어에 재생할 오디오가 없습니다.");
     return;
   }
+
+  pauseAudio();
 
   try {
     speechAudioEl.src = audioUrl;
@@ -423,10 +607,104 @@ function pickInitialTextMode() {
   return "both";
 }
 
+function waitForAutoplayDelay(durationMs) {
+  clearAutoplayFallbackTimer();
+
+  return new Promise((resolve) => {
+    const finish = (completed) => {
+      if (state.autoplayFallbackTimer !== null) {
+        window.clearTimeout(state.autoplayFallbackTimer);
+        state.autoplayFallbackTimer = null;
+      }
+      if (state.autoplayFallbackResolver === cancelWait) {
+        state.autoplayFallbackResolver = null;
+      }
+      resolve(completed);
+    };
+
+    const cancelWait = () => {
+      finish(false);
+    };
+
+    state.autoplayFallbackResolver = cancelWait;
+    state.autoplayFallbackTimer = window.setTimeout(() => {
+      finish(true);
+    }, durationMs);
+  });
+}
+
+async function autoplayCurrentPage(sessionId) {
+  const page = getCurrentPage();
+  if (!page || !state.autoplayActive || sessionId !== state.autoplaySessionId) {
+    return;
+  }
+
+  const queue = [
+    { url: page.audio_primary_url, label: "원문 오디오" },
+    { url: page.audio_secondary_url, label: "번역 오디오" },
+  ].filter((entry) => Boolean(entry.url));
+
+  if (queue.length <= 0) {
+    await waitForAutoplayDelay(AUTOPLAY_SILENT_DELAY_MS);
+    return;
+  }
+
+  for (const entry of queue) {
+    if (!state.autoplayActive || sessionId !== state.autoplaySessionId) {
+      return;
+    }
+    await playAudioUrl(entry.url, entry.label);
+  }
+}
+
+async function startAutoplay() {
+  if (!state.book?.pages?.length || !state.soundEnabled) {
+    return;
+  }
+
+  stopAutoplay({ pauseAudioPlayback: true, clearStatus: false });
+
+  state.autoplayActive = true;
+  state.autoplaySessionId += 1;
+  const sessionId = state.autoplaySessionId;
+
+  updateAutoplayToggle();
+
+  while (state.autoplayActive && sessionId === state.autoplaySessionId) {
+    const currentPageNumber = state.pageIndex + 1;
+    const totalPages = state.book.pages.length;
+    setStatus(`자동재생 중... ${currentPageNumber} / ${totalPages}`);
+
+    await autoplayCurrentPage(sessionId);
+
+    if (!state.autoplayActive || sessionId !== state.autoplaySessionId) {
+      break;
+    }
+
+    if (state.pageIndex >= totalPages - 1) {
+      state.autoplayActive = false;
+      updateAutoplayToggle();
+      setStatus("자동재생이 마지막 페이지에서 종료되었습니다.");
+      return;
+    }
+
+    moveToPage(state.pageIndex + 1, { cancelAutoplay: false });
+    await waitForAutoplayDelay(PAGE_TURN_MS + 40);
+  }
+
+  if (!state.autoplayActive) {
+    updateAutoplayToggle();
+  }
+}
+
 async function loadBook(runId) {
   setStatus("불러오는 중...");
   hideBook();
-  pauseAudio();
+  stopAutoplay({ pauseAudioPlayback: true, clearStatus: false });
+  state.book = null;
+  updateRunQuery(runId);
+  fillPageOptions();
+  updatePrintViewLink();
 
   try {
     const response = await fetch(`/api/book?run=${encodeURIComponent(runId)}`);
@@ -441,15 +719,22 @@ async function loadBook(runId) {
     state.textMode = pickInitialTextMode();
 
     if (!state.book.pages?.length) {
+      fillPageOptions();
+      updatePrintViewLink();
       setStatus("페이지 데이터가 없습니다.");
       hideBook();
       return;
     }
 
+    fillPageOptions();
+    updatePrintViewLink();
     setStatus("");
     renderPage();
   } catch (error) {
     console.error("Failed to load book", error);
+    state.book = null;
+    fillPageOptions();
+    updatePrintViewLink();
     setStatus(`불러오기 실패: ${error.message}`);
     hideBook();
   }
@@ -475,6 +760,9 @@ function fillRunOptions(runs) {
 async function loadRuns() {
   setStatus("실행 결과 목록 불러오는 중...");
   hideBook();
+  state.book = null;
+  fillPageOptions();
+  updatePrintViewLink();
 
   try {
     const response = await fetch("/api/runs");
@@ -492,10 +780,15 @@ async function loadRuns() {
     }
 
     fillRunOptions(state.runs);
-    runSelectEl.value = state.runs[0].id;
+
+    const requestedRunId = getRequestedRunId();
+    const initialRun =
+      state.runs.find((run) => run.id === requestedRunId) || state.runs[0];
+
+    runSelectEl.value = initialRun.id;
     setStatus("");
 
-    await loadBook(state.runs[0].id);
+    await loadBook(initialRun.id);
   } catch (error) {
     console.error("Failed to load runs", error);
     setStatus(`목록 로딩 실패: ${error.message}`);
@@ -511,12 +804,20 @@ runSelectEl.addEventListener("change", (event) => {
   loadBook(runId);
 });
 
+pageSelectEl.addEventListener("change", (event) => {
+  const nextIndex = Number.parseInt(event.target.value, 10);
+  if (Number.isNaN(nextIndex)) {
+    return;
+  }
+  moveToPage(nextIndex);
+});
+
 modePrimaryEl.addEventListener("click", () => {
   if (state.textMode === "primary") {
     return;
   }
+  stopAutoplay({ pauseAudioPlayback: true, clearStatus: true });
   state.textMode = "primary";
-  pauseAudio();
   renderPage();
 });
 
@@ -524,8 +825,8 @@ modeSecondaryEl.addEventListener("click", () => {
   if (state.textMode === "secondary") {
     return;
   }
+  stopAutoplay({ pauseAudioPlayback: true, clearStatus: true });
   state.textMode = "secondary";
-  pauseAudio();
   renderPage();
 });
 
@@ -533,16 +834,31 @@ modeBothEl.addEventListener("click", () => {
   if (state.textMode === "both") {
     return;
   }
+  stopAutoplay({ pauseAudioPlayback: true, clearStatus: true });
   state.textMode = "both";
-  pauseAudio();
   renderPage();
 });
 
+autoplayToggleEl.addEventListener("click", () => {
+  if (state.autoplayActive) {
+    stopAutoplay({ pauseAudioPlayback: true, clearStatus: true });
+    return;
+  }
+  startAutoplay();
+});
+
 soundToggleEl.addEventListener("click", () => {
-  state.soundEnabled = !state.soundEnabled;
+  const nextSoundEnabled = !state.soundEnabled;
+
+  if (!nextSoundEnabled) {
+    stopAutoplay({ pauseAudioPlayback: true, clearStatus: true });
+  }
+
+  state.soundEnabled = nextSoundEnabled;
   if (!state.soundEnabled) {
     pauseAudio();
   }
+
   updateSoundToggle();
   setNavState();
 });
@@ -603,6 +919,9 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+fillPageOptions();
 updateSoundToggle();
 updateModeButtons();
+updatePrintViewLink();
+updateAutoplayToggle();
 loadRuns();

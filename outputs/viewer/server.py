@@ -19,6 +19,7 @@ from app.services.story_result_builder import build_story_result_payload
 
 RUN_GLOB = "*_story_*"
 STORY_GLOB = "story_*.json"
+QUIZ_GLOB = "quiz_*.json"
 RUN_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
 PAGE_ASSET_PATTERN = re.compile(r"^page_(\d+)\.[^.]+$")
 
@@ -166,6 +167,7 @@ def iter_runs() -> list[dict]:
 
         audio_root = run_dir / "audio"
         has_any_audio = audio_root.exists() and any(audio_root.rglob("*.wav"))
+        quiz_files = sorted(run_dir.glob(QUIZ_GLOB))
         illustration_root = run_dir / "illustrations"
         has_any_illustration = illustration_root.exists() and any(
             illustration_root.glob("page_*.*")
@@ -186,6 +188,8 @@ def iter_runs() -> list[dict]:
                 "page_count": page_count,
                 "has_any_audio": has_any_audio,
                 "has_any_illustration": has_any_illustration,
+                "has_quiz": bool(quiz_files),
+                "quiz_json": quiz_files[0].name if quiz_files else None,
                 "updated_at": updated_at,
             }
         )
@@ -229,6 +233,35 @@ def build_book_payload(run_id: str) -> dict:
     return payload
 
 
+def find_quiz_json_path(run_dir: Path) -> Path | None:
+    quiz_files = sorted(run_dir.glob(QUIZ_GLOB))
+    if not quiz_files:
+        return None
+    return quiz_files[0]
+
+
+def build_quiz_payload(run_id: str) -> dict:
+    run_dir = find_run_dir(run_id)
+    if run_dir is None:
+        raise FileNotFoundError(f"run not found: {run_id}")
+
+    quiz_path = find_quiz_json_path(run_dir)
+    if quiz_path is None:
+        return {
+            "run_id": run_id,
+            "quiz_json": None,
+            "quiz_json_url": None,
+            "quiz": None,
+        }
+
+    return {
+        "run_id": run_id,
+        "quiz_json": quiz_path.name,
+        "quiz_json_url": to_outputs_url(quiz_path),
+        "quiz": load_json(quiz_path),
+    }
+
+
 class ViewerHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(OUTPUTS_DIR), **kwargs)
@@ -264,6 +297,25 @@ class ViewerHandler(SimpleHTTPRequestHandler):
 
             try:
                 payload = build_book_payload(run_id)
+            except FileNotFoundError as error:
+                self._send_json(404, {"error": str(error)})
+                return
+            except Exception as error:
+                self._send_json(500, {"error": str(error)})
+                return
+
+            self._send_json(200, payload)
+            return
+
+        if parsed.path == "/api/quiz":
+            params = parse_qs(parsed.query)
+            run_id = (params.get("run") or [""])[0].strip()
+            if not run_id:
+                self._send_json(400, {"error": "query parameter 'run' is required"})
+                return
+
+            try:
+                payload = build_quiz_payload(run_id)
             except FileNotFoundError as error:
                 self._send_json(404, {"error": str(error)})
                 return
