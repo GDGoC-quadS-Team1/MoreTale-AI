@@ -1,5 +1,6 @@
 import os
 import re
+from pathlib import Path
 from typing import Optional
 
 from google import genai
@@ -14,7 +15,8 @@ from generators.illustration.illustration_prompt_utils import (
 from generators.story.story_model import Story
 from generators.story.story_prompts import StoryPrompt
 
-load_dotenv()
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 
 
 def _slugify_identifier(text: str) -> str:
@@ -22,13 +24,16 @@ def _slugify_identifier(text: str) -> str:
 
 
 class StoryGenerator:
-    def __init__(self, model_name: str = "gemini-2.5-flash", include_style_guide: bool = False):
-        gemini_api_key = os.getenv("GEMINI_STORY_API_KEY")
+    def __init__(self, model_name: str = "gemini-2.5-flash", include_style_guide: bool = True):
+        gemini_api_key = (os.getenv("GEMINI_STORY_API_KEY") or "").strip()
         if not gemini_api_key:
             raise ValueError("GEMINI_STORY_API_KEY environment variable not set.")
         self.client = genai.Client(api_key=gemini_api_key)
         self.model_name = model_name
-        self.prompts = StoryPrompt(include_style_guide=include_style_guide)
+        # `include_style_guide` is kept for backwards compatibility. The style guide
+        # is now always appended to the system instruction.
+        _ = include_style_guide
+        self.prompts = StoryPrompt()
 
     def generate_story(
         self,

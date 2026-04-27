@@ -1,10 +1,19 @@
-from .story_model import Page, Story, VocabularyEntry
+from .story_model import STORY_PAGE_COUNT, Page, Story, VocabularyEntry
 from .story_prompts import StoryPrompt
 
-__all__ = ["Page", "Story", "StoryPrompt", "StoryGenerator", "VocabularyEntry"]
+__all__ = [
+    "Page",
+    "STORY_PAGE_COUNT",
+    "Story",
+    "StoryPrompt",
+    "StoryGenerator",
+    "VocabularyEntry",
+]
 
-try:
-    from .story_generator import StoryGenerator
-except ModuleNotFoundError:
-    # Allow importing schema/prompt modules without runtime generator deps.
-    StoryGenerator = None  # type: ignore[assignment]
+
+def __getattr__(name: str):
+    if name == "StoryGenerator":
+        from .story_generator import StoryGenerator
+
+        return StoryGenerator
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
