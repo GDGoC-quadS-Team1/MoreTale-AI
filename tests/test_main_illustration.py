@@ -66,8 +66,8 @@ class TestMainIllustration(unittest.TestCase):
         ]
 
         illustration_result = {
-            "total_tasks": 25,
-            "generated": 25,
+            "total_tasks": 33,
+            "generated": 33,
             "skipped": 0,
             "failed": 0,
             "cover": {

@@ -11,6 +11,11 @@ def build_page_prompt(story: Story, page) -> tuple[str, str]:
     full_prompt = (page.illustration_prompt or "").strip()
     scene_prompt = (page.illustration_scene_prompt or "").strip()
 
+    # When scene extraction falls back to the full prompt text, reuse the full
+    # prompt directly instead of prepending the shared prefix again.
+    if scene_prompt and full_prompt and scene_prompt == full_prompt:
+        return full_prompt, "full_only"
+
     if scene_prompt:
         scene_focused_prompt = ", ".join(
             part for part in (illustration_prefix, scene_prompt) if part
