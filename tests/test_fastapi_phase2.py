@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 try:
-    from fastapi.testclient import TestClient
+    from tests.asgi_test_client import ASGITestClient as TestClient
 except ModuleNotFoundError:  # pragma: no cover
     TestClient = None
 
@@ -16,8 +16,9 @@ except ModuleNotFoundError:  # pragma: no cover
     create_app = None
 
 try:
-    from generators.story.story_model import Page, Story, VocabularyEntry
+    from generators.story.story_model import STORY_PAGE_COUNT, Page, Story, VocabularyEntry
 except ModuleNotFoundError:  # pragma: no cover
+    STORY_PAGE_COUNT = None
     Page = None
     Story = None
     VocabularyEntry = None
@@ -49,7 +50,7 @@ def _build_fake_story():
                 )
             ],
         )
-        for page_number in range(1, 25)
+        for page_number in range(1, STORY_PAGE_COUNT + 1)
     ]
     return Story(
         title_primary="Test Title Primary",
@@ -74,6 +75,7 @@ def _write_json(path: Path, payload: dict) -> None:
     or create_app is None
     or Story is None
     or Page is None
+    or STORY_PAGE_COUNT is None
     or VocabularyEntry is None
     or JobStore is None
     or get_run_dir is None
@@ -128,12 +130,12 @@ class TestFastAPIServerPhase2(unittest.TestCase):
     ):
         story_patch = (
             patch(
-                "app.services.story_orchestrator.StoryService.generate_story",
+                "app.services.generation_pipeline.generate_story",
                 side_effect=story_side_effect,
             )
             if story_side_effect is not None
             else patch(
-                "app.services.story_orchestrator.StoryService.generate_story",
+                "app.services.generation_pipeline.generate_story",
                 return_value=(_build_fake_story(), "gemini-2.5-flash"),
             )
         )
@@ -142,20 +144,20 @@ class TestFastAPIServerPhase2(unittest.TestCase):
             with patch("app.services.story_orchestrator.make_story_id", return_value=story_id):
                 tts_patch = (
                     patch(
-                        "app.services.story_orchestrator.TTSService.generate_tts",
+                        "app.services.generation_pipeline.generate_tts",
                         side_effect=tts_side_effect,
                     )
                     if tts_side_effect is not None
-                    else patch("app.services.story_orchestrator.TTSService.generate_tts")
+                    else patch("app.services.generation_pipeline.generate_tts")
                 )
                 illustration_patch = (
                     patch(
-                        "app.services.story_orchestrator.IllustrationService.generate_illustrations",
+                        "app.services.generation_pipeline.generate_illustrations",
                         side_effect=illustration_side_effect,
                     )
                     if illustration_side_effect is not None
                     else patch(
-                        "app.services.story_orchestrator.IllustrationService.generate_illustrations"
+                        "app.services.generation_pipeline.generate_illustrations"
                     )
                 )
                 with tts_patch, illustration_patch:
@@ -170,8 +172,8 @@ class TestFastAPIServerPhase2(unittest.TestCase):
         payload["generation"]["enable_tts"] = True
         story_id = "20260221_130001_story_mina-friendship"
 
-        def tts_success(*, request, story_id, story):
-            del request, story
+        def tts_success(*, request, story, output_dir):
+            del request, story, output_dir
             run_dir = get_run_dir(story_id)
             primary_dir = run_dir / "audio" / "01_korean"
             secondary_dir = run_dir / "audio" / "02_english"
@@ -180,7 +182,7 @@ class TestFastAPIServerPhase2(unittest.TestCase):
             (primary_dir / "page_01_primary.wav").write_bytes(b"RIFF")
             (secondary_dir / "page_01_secondary.wav").write_bytes(b"RIFF")
             entries = []
-            for page_number in range(1, 25):
+            for page_number in range(1, STORY_PAGE_COUNT + 1):
                 if page_number == 1:
                     primary_status = "generated"
                     secondary_status = "generated"
@@ -209,14 +211,19 @@ class TestFastAPIServerPhase2(unittest.TestCase):
             _write_json(
                 run_dir / "audio" / "manifest.json",
                 {
-                    "total_tasks": 48,
+                    "total_tasks": STORY_PAGE_COUNT * 2,
                     "generated": 2,
-                    "skipped": 46,
+                    "skipped": STORY_PAGE_COUNT * 2 - 2,
                     "failed": 0,
                     "entries": entries,
                 },
             )
-            return {"total_tasks": 48, "generated": 2, "skipped": 46, "failed": 0}
+            return {
+                "total_tasks": STORY_PAGE_COUNT * 2,
+                "generated": 2,
+                "skipped": STORY_PAGE_COUNT * 2 - 2,
+                "failed": 0,
+            }
 
         create_response = self._create_story_with_patches(
             story_id=story_id,
@@ -244,8 +251,8 @@ class TestFastAPIServerPhase2(unittest.TestCase):
         payload["generation"]["enable_illustration"] = True
         story_id = "20260221_130002_story_mina-friendship"
 
-        def illustration_partial(*, request, story_id, story):
-            del request, story
+        def illustration_partial(*, request, story, output_dir):
+            del request, story, output_dir
             run_dir = get_run_dir(story_id)
             illustrations_dir = run_dir / "illustrations"
             illustrations_dir.mkdir(parents=True, exist_ok=True)
@@ -253,7 +260,7 @@ class TestFastAPIServerPhase2(unittest.TestCase):
             _write_json(
                 illustrations_dir / "manifest.json",
                 {
-                    "total_tasks": 24,
+                    "total_tasks": STORY_PAGE_COUNT,
                     "generated": 1,
                     "skipped": 0,
                     "failed": 1,
@@ -271,7 +278,12 @@ class TestFastAPIServerPhase2(unittest.TestCase):
                     ],
                 },
             )
-            return {"total_tasks": 24, "generated": 1, "skipped": 0, "failed": 1}
+            return {
+                "total_tasks": STORY_PAGE_COUNT,
+                "generated": 1,
+                "skipped": 0,
+                "failed": 1,
+            }
 
         create_response = self._create_story_with_patches(
             story_id=story_id,
@@ -304,8 +316,8 @@ class TestFastAPIServerPhase2(unittest.TestCase):
         payload["generation"]["enable_illustration"] = True
         story_id = "20260221_130002_story_mina-cover"
 
-        def illustration_with_cover(*, request, story_id, story):
-            del request, story
+        def illustration_with_cover(*, request, story, output_dir):
+            del request, story, output_dir
             run_dir = get_run_dir(story_id)
             illustrations_dir = run_dir / "illustrations"
             illustrations_dir.mkdir(parents=True, exist_ok=True)
@@ -316,7 +328,7 @@ class TestFastAPIServerPhase2(unittest.TestCase):
             _write_json(
                 illustrations_dir / "manifest.json",
                 {
-                    "total_tasks": 25,
+                    "total_tasks": STORY_PAGE_COUNT + 1,
                     "generated": 2,
                     "skipped": 0,
                     "failed": 0,
@@ -336,7 +348,7 @@ class TestFastAPIServerPhase2(unittest.TestCase):
                 },
             )
             return {
-                "total_tasks": 25,
+                "total_tasks": STORY_PAGE_COUNT + 1,
                 "generated": 2,
                 "skipped": 0,
                 "failed": 0,
@@ -520,7 +532,7 @@ class TestFastAPIServerPhase2(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         body = response.json()
         self.assertEqual(body["status"], "failed")
-        self.assertEqual(len(body["pages"]), 24)
+        self.assertEqual(len(body["pages"]), STORY_PAGE_COUNT)
 
 
 if __name__ == "__main__":

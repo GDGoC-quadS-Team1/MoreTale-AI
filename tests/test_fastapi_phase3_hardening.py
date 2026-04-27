@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 
 try:
-    from fastapi.testclient import TestClient
+    from tests.asgi_test_client import ASGITestClient as TestClient
 except ModuleNotFoundError:  # pragma: no cover
     TestClient = None
 
@@ -19,8 +19,9 @@ except ModuleNotFoundError:  # pragma: no cover
     post_stories_rate_limiter = None
 
 try:
-    from generators.story.story_model import Page, Story, VocabularyEntry
+    from generators.story.story_model import STORY_PAGE_COUNT, Page, Story, VocabularyEntry
 except ModuleNotFoundError:  # pragma: no cover
+    STORY_PAGE_COUNT = None
     Page = None
     Story = None
     VocabularyEntry = None
@@ -44,7 +45,7 @@ def _build_fake_story():
                 )
             ],
         )
-        for page_number in range(1, 25)
+        for page_number in range(1, STORY_PAGE_COUNT + 1)
     ]
     return Story(
         title_primary="Test Title Primary",
@@ -64,6 +65,7 @@ def _build_fake_story():
     or post_stories_rate_limiter is None
     or Page is None
     or Story is None
+    or STORY_PAGE_COUNT is None
     or VocabularyEntry is None,
     "fastapi/pydantic dependencies are not installed in this environment",
 )
@@ -115,7 +117,7 @@ class TestFastAPIServerPhase3Hardening(unittest.TestCase):
 
     def _post_story(self, story_id: str, payload: dict, headers: dict[str, str]):
         with patch(
-            "app.services.story_orchestrator.StoryService.generate_story",
+            "app.services.generation_pipeline.generate_story",
             return_value=(_build_fake_story(), "gemini-2.5-flash"),
         ):
             with patch("app.services.story_orchestrator.make_story_id", return_value=story_id):
