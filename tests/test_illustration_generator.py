@@ -85,6 +85,24 @@ class TestIllustrationPromptBuild(unittest.TestCase):
         self.assertEqual(mode, "full_only")
         self.assertEqual(prompt, "fallback full prompt")
 
+    def test_build_page_prompt_avoids_double_prefix_when_scene_equals_full_prompt(self):
+        story = SimpleNamespace(
+            illustration_prefix="Dreamy style, Main character",
+            image_style="Dreamy style",
+            main_character_design="Main character",
+        )
+        full_prompt = "Different character with a fully custom prompt"
+        page = SimpleNamespace(
+            page_number=3,
+            illustration_prompt=full_prompt,
+            illustration_scene_prompt=full_prompt,
+        )
+
+        prompt, mode = IllustrationGenerator._build_page_prompt(story=story, page=page)
+
+        self.assertEqual(mode, "full_only")
+        self.assertEqual(prompt, full_prompt)
+
     def test_build_cover_prompt_forbids_visible_title_text(self):
         story = SimpleNamespace(
             title_primary="별빛 숲의 노래",

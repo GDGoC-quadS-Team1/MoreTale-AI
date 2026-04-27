@@ -19,6 +19,19 @@ def _fake_pipeline_result(tts_result: dict | None = None) -> SimpleNamespace:
 
 
 class TestMainTTS(unittest.TestCase):
+    def test_build_output_dir_falls_back_to_secondary_title_slug(self):
+        story = SimpleNamespace(
+            title_primary="리아의 무지개 연",
+            title_secondary="Lia's Rainbow Kite",
+        )
+
+        path = main.build_output_dir("20260331_234950", story, "gemini-2.5-flash")
+
+        self.assertEqual(
+            path,
+            Path("outputs") / "20260331_234950_story_lia-s-rainbow-kite",
+        )
+
     def test_enable_tts_requires_tts_api_key(self):
         args = [
             "main.py",
@@ -59,8 +72,8 @@ class TestMainTTS(unittest.TestCase):
         ]
 
         tts_result = {
-            "total_tasks": 48,
-            "generated": 48,
+            "total_tasks": 64,
+            "generated": 64,
             "skipped": 0,
             "failed": 0,
             "failures": [],
