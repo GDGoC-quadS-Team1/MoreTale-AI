@@ -15,13 +15,14 @@ CLI 사용 가이드는 `cli/README.md`를 참고하세요.
 
 ## 현재 구현 상태
 
-- Phase 1: 서버 스캐폴딩, 비동기 job, 상태/결과 API
-- Phase 2: TTS/일러스트 옵션 처리, 부분 실패 표현
+- Phase 1: 서버 스캐폴딩, 비동기 job, 상태/결과 API (라우트 핸들러 전체 async)
+- Phase 2: TTS/일러스트/퀴즈 옵션 처리, 부분 실패 표현
 - Phase 3-Lite: 운영 하드닝
   - `X-Request-ID` 응답 헤더
   - 인메모리 레이트리밋 (`POST /api/stories/`, API key 단위)
-  - 모델/언어 allowlist 검증
+  - 모델/언어 allowlist 검증 (퀴즈 모델 포함)
   - 입력 길이 제한
+- 스토리 32페이지, 퀴즈 생성 (`generators/quiz`), 뷰어 자동재생/인쇄/퀴즈 UI 추가
 
 ## 프로젝트 구조
 
@@ -36,14 +37,21 @@ app/
   schemas/
     story.py
   services/
-    generation_pipeline.py
-    story_orchestrator.py
-    story_result_builder.py
-    output_paths.py
-    result_manifests.py
-    job_store.py
-    rate_limiter.py
-    request_context.py
+    generation_pipeline.py   # 공유 생성 파이프라인 (story → quiz → tts → illustration)
+    story_orchestrator.py    # 비동기 job 실행 및 상태 관리
+    story_result_builder.py  # 결과 응답 조립
+    storage.py               # 저장소 re-export 진입점
+    output_paths.py          # 출력 경로 헬퍼
+    result_manifests.py      # 산출물 매니페스트
+    job_store.py             # 인메모리 job 상태 저장
+    rate_limiter.py          # API key 단위 레이트리밋
+    request_context.py       # X-Request-ID 컨텍스트
+
+generators/
+  story/                     # 동화 생성 (Gemini)
+  quiz/                      # 퀴즈 생성 (Gemini)
+  tts/                       # TTS 생성 (Gemini TTS)
+  illustration/              # 일러스트 생성 (Nano Banana)
 ```
 
 ## 빠른 시작 (서버)
