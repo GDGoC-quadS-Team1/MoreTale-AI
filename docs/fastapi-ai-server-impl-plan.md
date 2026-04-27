@@ -115,7 +115,6 @@ outputs/
   "secondary_lang": "English",
   "theme": "Friendship",
   "extra_prompt": "Include a dragon",
-  "include_style_guide": true,
   "generation": {
     "story_model": "gemini-2.5-flash",
     "enable_tts": true,
@@ -213,10 +212,10 @@ app/
   schemas/
     story.py             # Pydantic 요청/응답 스키마
   services/
-    story_service.py     # StoryGenerator 래핑
-    tts_service.py       # TTSGenerator 래핑
-    illustration_service.py
-    storage.py           # 로컬/오브젝트 스토리지 추상화
+    generation_pipeline.py
+    story_orchestrator.py
+    story_result_builder.py
+    output_paths.py      # 로컬 output 경로/URL 유틸
   workers/
     tasks.py             # 백그라운드 job 실행(선택)
 ```
