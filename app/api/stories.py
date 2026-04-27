@@ -36,7 +36,7 @@ router = APIRouter(
     },
     status_code=status.HTTP_202_ACCEPTED,
 )
-def create_story(
+async def create_story(
     http_request: Request,
     request: StoryCreateRequest,
     background_tasks: BackgroundTasks,
@@ -72,7 +72,7 @@ def create_story(
         500: {"model": ErrorResponse},
     },
 )
-def get_story(story_id: str) -> StoryStatusResponse:
+async def get_story(story_id: str) -> StoryStatusResponse:
     return load_story_status(story_id=story_id)
 
 
@@ -86,5 +86,5 @@ def get_story(story_id: str) -> StoryStatusResponse:
         500: {"model": ErrorResponse},
     },
 )
-def get_story_result(story_id: str) -> StoryResultResponse:
+async def get_story_result(story_id: str) -> StoryResultResponse:
     return load_story_result(story_id=story_id)
