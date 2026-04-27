@@ -1,0 +1,20 @@
+Create a bilingual story-comprehension quiz.
+
+Story id: {story_id}
+Primary title: {story_title_primary}
+Secondary title: {story_title_secondary}
+Primary language: {primary_language}
+Secondary language: {secondary_language}
+Question count: {question_count}
+
+Required mix for 5 questions — use each skill exactly once:
+- 1 × story_comprehension
+- 1 × cause_and_effect
+- 1 × character_emotion
+- 1 × sequence
+- 1 × vocabulary_in_context
+
+If question_count is not 5, keep the same intent: cover as many distinct skills as possible, always include exactly one vocabulary_in_context question.
+
+Story context:
+{story_context}

@@ -7,6 +7,7 @@ from app.schemas.story import AssetStatus
 from app.services.output_paths import (
     build_outputs_url,
     ensure_outputs_dir,
+    find_quiz_json_path,
     find_story_json_path,
     get_run_dir,
     load_json,
@@ -241,6 +242,12 @@ def build_story_result_payload(
         raise FileNotFoundError(f"story json not found for run: {story_id}")
 
     story_json_url = to_outputs_url(story_json_path, prefix=static_prefix)
+    quiz_json_path = find_quiz_json_path(story_id)
+    quiz_json_url = (
+        to_outputs_url(quiz_json_path, prefix=static_prefix)
+        if quiz_json_path is not None
+        else None
+    )
     story = load_json(story_json_path)
     pages = story.get("pages")
     if not isinstance(pages, list):
@@ -456,6 +463,7 @@ def build_story_result_payload(
                 cover_status = "missing"
                 cover_error = None
 
+    quiz_service_error = (service_errors or {}).get("quiz")
     tts_service_error = (service_errors or {}).get("tts")
     illustration_service_error = (service_errors or {}).get("illustrations")
     tts_summary["service_error"] = tts_service_error
@@ -471,7 +479,8 @@ def build_story_result_payload(
     }
 
     has_partial_failures = bool(
-        (include_tts and (tts_summary["failed"] > 0 or tts_service_error))
+        quiz_service_error
+        or (include_tts and (tts_summary["failed"] > 0 or tts_service_error))
         or (
             include_illustration
             and (illustration_summary["failed"] > 0 or illustration_service_error)
@@ -483,6 +492,7 @@ def build_story_result_payload(
         "id": story_id,
         "status": job_status,
         "story_json_url": story_json_url,
+        "quiz_json_url": quiz_json_url,
         "assets": {
             "tts": tts_summary,
             "illustrations": illustration_summary,

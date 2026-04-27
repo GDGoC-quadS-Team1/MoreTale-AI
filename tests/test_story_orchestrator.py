@@ -10,9 +10,10 @@ from app.services.story_orchestrator import (
     enqueue_story_generation,
     job_store,
     load_story_result,
+    run_story_generation_job_background,
     run_story_generation_job,
 )
-from generators.story.story_model import Page, Story, VocabularyEntry
+from generators.story.story_model import STORY_PAGE_COUNT, Page, Story, VocabularyEntry
 
 
 def _build_fake_story() -> Story:
@@ -33,7 +34,7 @@ def _build_fake_story() -> Story:
                 )
             ],
         )
-        for page_number in range(1, 25)
+        for page_number in range(1, STORY_PAGE_COUNT + 1)
     ]
     return Story(
         title_primary="Test Title Primary",
@@ -98,7 +99,7 @@ class TestStoryOrchestrator(unittest.TestCase):
         self.assertEqual(response.id, "20260221_150001_story_mina")
         self.assertEqual(response.status, "queued")
         self.assertEqual(len(background_tasks.tasks), 1)
-        self.assertEqual(background_tasks.tasks[0].func, run_story_generation_job)
+        self.assertEqual(background_tasks.tasks[0].func, run_story_generation_job_background)
 
         job = job_store.load_job("20260221_150001_story_mina")
         self.assertIsNotNone(job)
@@ -110,7 +111,7 @@ class TestStoryOrchestrator(unittest.TestCase):
         job_store.initialize_job(story_id=story_id, request_payload=payload)
 
         with patch(
-            "app.services.story_orchestrator.StoryService.generate_story",
+            "app.services.generation_pipeline.generate_story",
             return_value=(_build_fake_story(), "gemini-2.5-flash"),
         ):
             run_story_generation_job(story_id=story_id, request_payload=payload)
@@ -119,6 +120,37 @@ class TestStoryOrchestrator(unittest.TestCase):
         self.assertIsNotNone(job)
         self.assertEqual(job["status"], "completed")
         self.assertFalse(job["result"]["assets"]["has_partial_failures"])
+
+    def test_run_story_generation_job_writes_quiz_when_enabled(self) -> None:
+        story_id = "20260221_150004_story_mina"
+        payload = self._build_create_payload()
+        payload["generation"]["enable_quiz"] = True
+        job_store.initialize_job(story_id=story_id, request_payload=payload)
+        fake_quiz = type(
+            "FakeQuiz",
+            (),
+            {
+                "model_dump_json": lambda self, indent=4: '{"story_id":"story","question_count":5,"questions":[]}',
+                "model_dump": lambda self, mode="json": {"story_id": "story"},
+            },
+        )()
+
+        with patch(
+            "app.services.generation_pipeline.generate_story",
+            return_value=(_build_fake_story(), "gemini-2.5-flash"),
+        ):
+            with patch(
+                "app.services.generation_pipeline.generate_quiz",
+                return_value=(fake_quiz, "gemini-2.5-flash"),
+            ) as mocked_quiz:
+                run_story_generation_job(story_id=story_id, request_payload=payload)
+
+        job = job_store.load_job(story_id)
+        self.assertIsNotNone(job)
+        self.assertEqual(job["status"], "completed")
+        self.assertTrue(job["result"]["quiz_json_url"].endswith("/quiz_gemini-2.5-flash.json"))
+        self.assertIsNone(job["result"]["quiz"]["service_error"])
+        mocked_quiz.assert_called_once()
 
     def test_load_story_result_rejects_queued_job(self) -> None:
         story_id = "20260221_150003_story_mina"
