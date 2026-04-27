@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from app.services.output_paths import get_run_dir, write_story_json
 from app.services.story_result_builder import build_story_result_payload
-from generators.story.story_model import Page, Story, VocabularyEntry
+from generators.story.story_model import STORY_PAGE_COUNT, Page, Story, VocabularyEntry
 
 
 def _build_fake_story() -> Story:
@@ -28,7 +28,7 @@ def _build_fake_story() -> Story:
                 )
             ],
         )
-        for page_number in range(1, 25)
+        for page_number in range(1, STORY_PAGE_COUNT + 1)
     ]
     return Story(
         title_primary="Test Title Primary",
@@ -69,6 +69,18 @@ class TestStoryResultBuilder(unittest.TestCase):
         write_story_json(story_id=story_id, story=story, story_model="gemini-2.5-flash")
 
         run_dir = get_run_dir(story_id)
+        _write_json(
+            run_dir / "quiz_gemini-2.5-flash.json",
+            {
+                "story_id": story_id,
+                "story_title_primary": "Test Title Primary",
+                "story_title_secondary": "Test Title Secondary",
+                "primary_language": "Korean",
+                "secondary_language": "English",
+                "question_count": 1,
+                "questions": [],
+            },
+        )
         primary_audio = run_dir / "audio" / "01_korean" / "page_01_primary.wav"
         secondary_audio = run_dir / "audio" / "02_english" / "page_01_secondary.wav"
         primary_audio.parent.mkdir(parents=True, exist_ok=True)
@@ -91,7 +103,7 @@ class TestStoryResultBuilder(unittest.TestCase):
         _write_json(
             run_dir / "illustrations" / "manifest.json",
             {
-                "total_tasks": 25,
+                "total_tasks": STORY_PAGE_COUNT + 1,
                 "generated": 2,
                 "skipped": 0,
                 "failed": 0,
@@ -140,6 +152,7 @@ class TestStoryResultBuilder(unittest.TestCase):
         )
 
         self.assertEqual(payload["story_json_url"], f"/{story_id}/story_gemini-2.5-flash.json")
+        self.assertEqual(payload["quiz_json_url"], f"/{story_id}/quiz_gemini-2.5-flash.json")
         self.assertEqual(payload["pages"][0]["audio_primary_url"], f"/{story_id}/audio/01_korean/page_01_primary.wav")
         self.assertEqual(payload["pages"][0]["illustration_url"], f"/{story_id}/illustrations/page_01.png")
         self.assertEqual(
@@ -148,6 +161,24 @@ class TestStoryResultBuilder(unittest.TestCase):
         )
         self.assertEqual(payload["assets"]["cover"]["url"], f"/{story_id}/illustrations/cover.png")
         self.assertEqual(payload["assets"]["illustrations"]["aspect_ratio"], "1:1")
+
+    def test_build_story_result_payload_omits_quiz_url_when_missing(self) -> None:
+        story_id = "20260221_160002_story_mina"
+        story = _build_fake_story()
+        write_story_json(story_id=story_id, story=story, story_model="gemini-2.5-flash")
+
+        payload = build_story_result_payload(
+            story_id=story_id,
+            include_tts=False,
+            include_illustration=False,
+            include_cover_illustration=False,
+            illustration_aspect_ratio="1:1",
+            cover_aspect_ratio="5:4",
+            job_status="completed",
+            static_prefix="",
+        )
+
+        self.assertIsNone(payload["quiz_json_url"])
 
 
 if __name__ == "__main__":
