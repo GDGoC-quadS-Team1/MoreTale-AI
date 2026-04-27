@@ -109,6 +109,38 @@ async def run_story_generation_job_background(
     )
 
 
+def cancel_story_job(story_id: str) -> StoryStatusResponse:
+    job = job_store.load_job(story_id=story_id)
+    if job is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=build_error(
+                code="STORY_NOT_FOUND",
+                message="story not found",
+                detail={"id": story_id},
+            ),
+        )
+
+    job_status = str(job.get("status", ""))
+    if job_status in {"completed", "failed", "canceled"}:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=build_error(
+                code="STORY_CANCEL_NOT_ALLOWED",
+                message=f"cannot cancel a job with status '{job_status}'",
+                detail={"id": story_id, "status": job_status},
+            ),
+        )
+
+    updated = job_store.mark_canceled(story_id=story_id)
+    log_event(
+        event="story.job.canceled",
+        story_id=story_id,
+        status="canceled",
+    )
+    return StoryStatusResponse.model_validate(updated)
+
+
 def load_story_status(story_id: str) -> StoryStatusResponse:
     job = job_store.load_job(story_id=story_id)
     if job is None:
@@ -220,6 +252,16 @@ def run_story_generation_job(
     illustration_result: dict[str, Any] | None = None
     illustration_aspect_ratio = "1:1"
     cover_aspect_ratio = "5:4"
+
+    current_job = job_store.load_job(story_id)
+    if current_job and current_job.get("status") == "canceled":
+        log_event(
+            event="story.job.skipped",
+            request_id=request_id,
+            story_id=story_id,
+            reason="canceled before execution",
+        )
+        return
 
     log_event(
         event="story.job.start",
