@@ -2,6 +2,8 @@ from typing import List
 
 from pydantic import BaseModel, Field, field_validator
 
+STORY_PAGE_COUNT = 32
+
 
 class VocabularyEntry(BaseModel):
     entry_id: str | None = Field(
@@ -30,7 +32,7 @@ class VocabularyEntry(BaseModel):
 
 
 class Page(BaseModel):
-    page_number: int = Field(..., description="Page number from 1 to 24")
+    page_number: int = Field(..., description=f"Page number from 1 to {STORY_PAGE_COUNT}")
     text_primary: str = Field(
         ..., description="Story text in the primary language (Child's context)"
     )
@@ -102,10 +104,15 @@ class Story(BaseModel):
         ),
     )
 
-    pages: List[Page] = Field(..., description="List of exactly 24 pages")
+    pages: List[Page] = Field(
+        ...,
+        description=f"List of exactly {STORY_PAGE_COUNT} pages",
+    )
 
     @field_validator("pages")
     def check_page_count(cls, value):
-        if len(value) != 24:
-            raise ValueError(f"Story must have exactly 24 pages, but got {len(value)}")
+        if len(value) != STORY_PAGE_COUNT:
+            raise ValueError(
+                f"Story must have exactly {STORY_PAGE_COUNT} pages, but got {len(value)}"
+            )
         return value
