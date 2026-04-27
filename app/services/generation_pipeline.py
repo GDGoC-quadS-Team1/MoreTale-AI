@@ -3,14 +3,18 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
-from generators.illustration.illustration_pipeline import IllustrationGenerator
-from generators.story.story_generator import StoryGenerator
+from generators.quiz.quiz_model import Quiz
 from generators.story.story_model import Story
-from generators.tts.tts_generator import TTSGenerator
 
 from app.schemas.story import StoryCreateRequest
+
+if TYPE_CHECKING:
+    from generators.illustration.illustration_pipeline import IllustrationGenerator
+    from generators.quiz.quiz_generator import QuizGenerator
+    from generators.story.story_generator import StoryGenerator
+    from generators.tts.tts_generator import TTSGenerator
 
 
 @dataclass(frozen=True)
@@ -21,8 +25,11 @@ class StoryPipelineRequest:
     secondary_lang: str
     theme: str = ""
     extra_prompt: str = ""
-    include_style_guide: bool = False
+    include_style_guide: bool = True
     story_model: str = "gemini-2.5-flash"
+    enable_quiz: bool = False
+    quiz_model: str = "gemini-2.5-flash"
+    quiz_question_count: int = 5
     enable_tts: bool = False
     tts_model: str = "gemini-2.5-flash-preview-tts"
     tts_voice: str = "Achernar"
@@ -36,6 +43,9 @@ class StoryPipelineRequest:
     illustration_request_interval_sec: float = 1.0
     illustration_skip_existing: bool = True
 
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "include_style_guide", True)
+
 
 @dataclass(frozen=True)
 class StoryPipelineResult:
@@ -43,6 +53,8 @@ class StoryPipelineResult:
     story_model: str
     output_dir: Path
     story_json_path: Path
+    quiz_json_path: Path | None
+    quiz_result: Quiz | None
     tts_result: dict[str, Any] | None
     illustration_result: dict[str, Any] | None
     service_errors: dict[str, str | None]
@@ -58,8 +70,11 @@ def build_pipeline_request_from_story_request(
         secondary_lang=request.secondary_lang,
         theme=request.theme,
         extra_prompt=request.extra_prompt,
-        include_style_guide=request.include_style_guide,
+        include_style_guide=True,
         story_model=request.generation.story_model,
+        enable_quiz=request.generation.enable_quiz,
+        quiz_model=request.generation.quiz_model,
+        quiz_question_count=request.generation.quiz_question_count,
         enable_tts=request.generation.enable_tts,
         tts_model=request.generation.tts_model,
         tts_voice=request.generation.tts_voice,
@@ -76,6 +91,8 @@ def build_pipeline_request_from_story_request(
 
 
 def generate_story(request: StoryPipelineRequest) -> tuple[Story, str]:
+    from generators.story.story_generator import StoryGenerator
+
     generator = StoryGenerator(
         model_name=request.story_model,
         include_style_guide=request.include_style_guide,
@@ -91,11 +108,29 @@ def generate_story(request: StoryPipelineRequest) -> tuple[Story, str]:
     return story, generator.model_name
 
 
+def generate_quiz(
+    request: StoryPipelineRequest,
+    story_id: str,
+    story: Story,
+) -> tuple[Quiz, str]:
+    from generators.quiz.quiz_generator import QuizGenerator
+
+    generator = QuizGenerator(model_name=request.quiz_model)
+    quiz = generator.generate_quiz(
+        story_id=story_id,
+        story=story,
+        question_count=request.quiz_question_count,
+    )
+    return quiz, generator.model_name
+
+
 def generate_tts(
     request: StoryPipelineRequest,
     story: Story,
     output_dir: str | Path,
 ) -> dict[str, Any]:
+    from generators.tts.tts_generator import TTSGenerator
+
     api_key = (os.getenv("GEMINI_TTS_API_KEY") or "").strip()
     if not api_key:
         raise RuntimeError("GEMINI_TTS_API_KEY environment variable not set.")
@@ -121,6 +156,8 @@ def generate_illustrations(
     story: Story,
     output_dir: str | Path,
 ) -> dict[str, Any]:
+    from generators.illustration.illustration_pipeline import IllustrationGenerator
+
     api_key = (os.getenv("NANO_BANANA_KEY") or "").strip()
     if not api_key:
         raise RuntimeError("NANO_BANANA_KEY environment variable not set.")
@@ -151,6 +188,19 @@ def write_story_json_to_output_dir(
     with story_json_path.open("w", encoding="utf-8") as file:
         file.write(story.model_dump_json(indent=4))
     return story_json_path
+
+
+def write_quiz_json_to_output_dir(
+    output_dir: str | Path,
+    quiz: Quiz,
+    quiz_model: str,
+) -> Path:
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    quiz_json_path = output_path / f"quiz_{quiz_model}.json"
+    with quiz_json_path.open("w", encoding="utf-8") as file:
+        file.write(quiz.model_dump_json(indent=4))
+    return quiz_json_path
 
 
 def _raise_on_tts_failures(tts_result: dict[str, Any]) -> None:
@@ -184,9 +234,28 @@ def run_story_generation_pipeline(
     output_dir = Path(output_dir_factory(story, story_model))
     story_json_path = write_story_json_to_output_dir(output_dir, story, story_model)
 
-    service_errors: dict[str, str | None] = {"tts": None, "illustrations": None}
+    service_errors: dict[str, str | None] = {"quiz": None, "tts": None, "illustrations": None}
+    quiz_result: Quiz | None = None
+    quiz_json_path: Path | None = None
     tts_result: dict[str, Any] | None = None
     illustration_result: dict[str, Any] | None = None
+
+    if request.enable_quiz:
+        try:
+            quiz_result, quiz_model = generate_quiz(
+                request=request,
+                story_id=output_dir.name,
+                story=story,
+            )
+            quiz_json_path = write_quiz_json_to_output_dir(
+                output_dir=output_dir,
+                quiz=quiz_result,
+                quiz_model=quiz_model,
+            )
+        except Exception as error:
+            if strict_assets:
+                raise
+            service_errors["quiz"] = str(error)
 
     if request.enable_tts:
         try:
@@ -217,6 +286,8 @@ def run_story_generation_pipeline(
         story_model=story_model,
         output_dir=output_dir,
         story_json_path=story_json_path,
+        quiz_json_path=quiz_json_path,
+        quiz_result=quiz_result,
         tts_result=tts_result,
         illustration_result=illustration_result,
         service_errors=service_errors,

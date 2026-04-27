@@ -9,6 +9,7 @@ from typing import Any
 from app.core.config import get_settings
 
 STORY_GLOB = "story_*.json"
+QUIZ_GLOB = "quiz_*.json"
 
 
 def ensure_outputs_dir() -> Path:
@@ -54,6 +55,15 @@ def write_story_json(story_id: str, story: Any, story_model: str) -> Path:
     return story_json_path
 
 
+def write_quiz_json(story_id: str, quiz: Any, quiz_model: str) -> Path:
+    run_dir = get_run_dir(story_id)
+    run_dir.mkdir(parents=True, exist_ok=True)
+    quiz_json_path = run_dir / f"quiz_{quiz_model}.json"
+    with quiz_json_path.open("w", encoding="utf-8") as file:
+        file.write(quiz.model_dump_json(indent=4))
+    return quiz_json_path
+
+
 def find_story_json_path(story_id: str) -> Path | None:
     run_dir = get_run_dir(story_id)
     if not run_dir.is_dir():
@@ -63,6 +73,17 @@ def find_story_json_path(story_id: str) -> Path | None:
     if not story_files:
         return None
     return story_files[0]
+
+
+def find_quiz_json_path(story_id: str) -> Path | None:
+    run_dir = get_run_dir(story_id)
+    if not run_dir.is_dir():
+        return None
+
+    quiz_files = sorted(run_dir.glob(QUIZ_GLOB))
+    if not quiz_files:
+        return None
+    return quiz_files[0]
 
 
 def load_json(path: Path) -> dict[str, Any]:
