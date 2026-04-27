@@ -18,7 +18,7 @@ class StoryPrompt:
     style_guide_path: str = field(
         default_factory=lambda: str(PROMPTS_DIR / "style_guide.txt")
     )
-    include_style_guide: bool = False
+    include_style_guide: bool = True
 
     _system_instruction: Optional[str] = field(init=False, repr=False, default=None)
     _user_prompt_template: Optional[str] = field(init=False, repr=False, default=None)
@@ -37,10 +37,8 @@ class StoryPrompt:
             system_instruction = self._read_text(
                 self.system_instruction_path, "System instruction"
             )
-
-            if self.include_style_guide:
-                style_guide = self._read_text(self.style_guide_path, "Style guide")
-                system_instruction = f"{system_instruction}\n\n---\n\n{style_guide}"
+            style_guide = self._read_text(self.style_guide_path, "Style guide")
+            system_instruction = f"{system_instruction}\n\n---\n\n{style_guide}"
 
             self._system_instruction = system_instruction
         return self._system_instruction

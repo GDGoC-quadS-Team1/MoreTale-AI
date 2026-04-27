@@ -57,23 +57,72 @@ Offer both versions:
 **2. Strong Narrative Structure (서사 구조)**
 
 - **Story arc required**: Every story must have:
-  - **Setup (Pages 1-4)**: Introduce character, world, and a genuine problem/challenge
+  - **Setup (Pages 1-6)**: Introduce the main character's world and emotional baseline
+    - MUST establish: main character's emotional world + inciting problem
+    - MUST NOT: introduce more than 1 supporting character
     - NOT: "Everything is perfect!"
     - YES: "Ji-woo wants to make friends at his new school, but he's nervous because he speaks two languages"
   
-  - **Conflict (Pages 5-12)**: Age-appropriate obstacle the character must overcome (emotional, social, or practical)
+  - **Rising Action (Pages 7-14)**: Build pressure through distinct motivations and failed attempts
+    - MUST establish: each supporting character's motivation separately
+    - MUST include: at least 1 failed attempt before the solution
+    - MUST include: antagonist's humanizing backstory across a minimum of 2 pages
     - Examples: Feeling left out, losing something important, being scared of something new, misunderstanding between friends
     - Must be relatable to target age group
   
-  - **Climax (Pages 13-20)**: Moment of decision or action where the character applies what they've learned
+  - **Climax (Pages 15-24)**: Show change happening, not instant resolution
+    - MUST show: antagonist's internal change across a minimum of 3 pages
+    - MUST show: solution emerging from BOTH cultures' contributions
+    - MUST include: protagonist making an active choice, not just watching
     - Character makes a brave choice
-    - Uses knowledge from BOTH cultures to solve the problem
     - Shows emotional growth
   
-  - **Resolution (Pages 17-24)**: Problem solved, with clear growth or learning demonstrated
-    - Character reflects on what they learned
+  - **Resolution (Pages 25-32)**: Land the story emotionally without over-explaining
+    - MUST return to: main character's perspective
+    - MUST NOT: state the moral explicitly
+    - MUST end with: emotional image, not explanation
+    - Character reflects on what they learned through action, image, or gentle dialogue
     - Celebrates with family/community
     - Hints at future confidence or skills
+
+- **Character Budget Rule**
+  - BEFORE writing, calculate: [plot-driving characters] x 4 pages <= 32
+  - Example: 4 characters x 4 = 16, which leaves room for escalation and resolution
+  - Example: 6 characters x 4 = 24, which risks starving the climax and ending
+  - If over budget:
+    - Merge two characters into one
+    - Or demote one character to background presence only
+    - Background presence means the character may appear in illustrations or atmosphere, but does not make plot-driving decisions
+
+- **Antagonist Design Rule**
+  - The antagonist must have a motivation revealed BEFORE the resolution
+  - Choose a humanizing root cause such as:
+    - Loneliness: "The monster had never seen moonlight up close before"
+    - Misunderstanding: "The monster thought moonlight was hurting its cloud home"
+    - Longing: "The monster wanted something warm to hold onto"
+  - Avoid flat evil motives:
+    - ❌ "The monster stole the moonlight because it's evil"
+  - The resolution must ADDRESS this motivation directly
+  - Kindness alone is not enough; show why kindness worked for THIS antagonist
+
+- **Protagonist Agency Rule**
+  - The main character must make at least ONE meaningful choice that directly influences the outcome
+  - Even in a bedtime-story, framing-story, or dream-story format, the child character must contribute to the resolution
+  - Passive structure to avoid:
+    - ❌ "Jiwoo watches from the window as the rabbits solve everything"
+  - Active structure to aim for:
+    - ✅ The child offers an idea, a gesture, a memory, a warning, or a symbolic action that changes what the helpers do
+
+- **Climax Pacing Rule**
+  - The antagonist's change of heart must span a minimum of 3 pages
+  - Required beats, each with at least 1 page:
+    - Beat 1: Antagonist receives a gesture and shows confusion or surprise
+    - Beat 2: Antagonist visibly struggles between holding on and letting go
+    - Beat 3: Antagonist makes the choice to release, surrender, apologize, or repair
+  - Avoid compressed resolution:
+    - ❌ offer gift -> antagonist accepts -> problem solved in 2 or fewer pages
+  - Prefer expanded emotional transition:
+    - ✅ gesture -> hesitation -> conflict -> remembered need -> choice -> release
 
 - **Character development**: Main character should change, learn, or grow by the end
   - Start: Uncertain, scared, lacking skill/knowledge
@@ -272,73 +321,84 @@ Offer both versions:
 
 ---
 
-### **STORY STRUCTURE TEMPLATE (24 pages)**
+### **STORY STRUCTURE TEMPLATE (32 pages)**
 
-**Pages 1-4: Introduction & Problem Setup**
+**Pages 1-6: Setup**
 - Page 1: Introduce main character in their daily life
   - Show cultural elements naturally integrated (food at breakfast, decor, language mix)
   - Establish the character's world and routine
   
-- Pages 2-3: Show what makes character special
+- Pages 2-3: Deepen the main character's emotional world
   - Their bilingual ability, their mixed heritage, their personality
-  - Small moment showing both cultures in everyday life
+  - Show what they want, fear, or feel they are missing
   
-- Page 4: Present the challenge/problem
+- Pages 4-5: Present the challenge/problem and emotional stakes
   - Something goes wrong, or character wants something they don't have
   - Problem should be emotionally resonant (loneliness, fear, loss, desire to help)
 
-**Pages 5-10: Rising Action & Attempts**
-- Pages 5-6: Character takes action to address the problem
+- Page 6: Lock the inciting problem into motion
+  - The character cannot simply go back to normal
+  - Do not introduce more than 1 supporting character before this point
+
+**Pages 7-14: Rising Action**
+- Pages 7-8: Character takes action to address the problem
   - First attempt (usually doesn't fully work)
   - Encounters obstacles (age-appropriate: things are harder than expected, feelings get hurt, weather changes)
   
-- Pages 7-8: Cultural elements provide clues or tools
+- Pages 9-10: Supporting characters' motivations become distinct
+  - Each important helper should want something slightly different
+  - Avoid making all supporting characters interchangeable
+  
+- Pages 11-12: Antagonist backstory or vulnerability emerges
+  - Reveal the antagonist's humanizing motive through image, memory, dialogue, or behavior
+  - This reveal must happen before the resolution and take at least 2 pages
+  
+- Pages 13-14: Failed attempt and regroup
+  - The first solution does not work yet
+  - Character and allies understand the real problem more clearly
+
+**Pages 15-24: Climax**
+- Pages 15-16: Cultural elements provide clues or tools
   - Character remembers something from Culture A
   - Tries to apply it, but needs something more
   
-- Pages 9-10: Growing frustration or setback
-  - Things seem worse, not better
-  - Character feels discouraged but doesn't give up
-
-**Pages 11-16: Climax & Cultural Integration**
-- Pages 11-12: New insight from Culture B
+- Pages 17-18: New insight from Culture B
   - Character remembers a story, tradition, or wisdom from other culture
   - Realizes the two cultures can work together
   
-- Pages 13-14: Character uses knowledge from BOTH cultures to solve problem
+- Pages 19-20: Protagonist makes an active, meaningful choice
+  - The main character chooses to offer, say, risk, confess, or share something that changes the outcome
+  - The child must influence the resolution directly
+  
+- Pages 21-23: Antagonist's internal change unfolds slowly
   - Specific example: Uses Korean concept of "jeong" (deep care) + Vietnamese "hiếu" (filial piety) to understand how to help grandmother
-  - Moment of realization: "I can use both!"
+  - Show confusion, hesitation, inner conflict, and emotional recognition across at least 3 pages
   
-- Pages 15-16: Brave decision and action
-  - Character takes the risk
-  - Show cultural pride/appreciation: "I'm so glad I know both ways"
+  - Page 21: Gesture is received; antagonist reacts with surprise or confusion
+  - Page 22: Antagonist visibly struggles with conflicting desires
+  - Page 23: Antagonist chooses release, surrender, apology, or repair
+  
+- Page 24: The turning point completes
+  - The solution visibly emerges from BOTH cultures' contributions
+  - Success feels earned rather than instant
 
-**Pages 17-21: Falling Action & Celebration**
-- Pages 17-18: Problem resolves
+**Pages 25-32: Resolution**
+- Pages 25-26: Problem resolves from the main character's perspective
   - Success! But show effort, not magic
-  - Character sees result of their actions
+  - Return the emotional camera to the main character
   
-- Pages 19-20: Character shares experience with family/friends
+- Pages 27-28: Character shares experience with family/friends
   - Teaches others what they learned
   - Family/community responds with pride and support
   
-- Page 21: Celebration incorporating both cultures
+- Pages 29-30: Celebration incorporating both cultures
   - Specific example: Celebration meal with both Korean and Vietnamese dishes
   - Everyone participates, showing unity
 
-**Pages 22-24: Resolution & Reflection**
-- Page 22: Character reflects on what they learned
-  - Internal thought: "I learned that..."
-  - Emotional growth visible
-  
-- Page 23: Show how character has changed
-  - Doing something they couldn't do at the beginning
-  - More confident, skilled, or understanding
-  
-- Page 24: End on warm, affirming note
-  - Hint at growth or future adventures: "And tomorrow, there will be new adventures..."
-  - Character sleeping peacefully, or looking at stars, or hugging family
-  - Final message: Both cultures make you stronger
+- Pages 31-32: Emotional landing
+  - Do not state the moral explicitly
+  - End with an emotional image, atmosphere, or gesture instead of explanation
+  - The final feeling should be warm, earned, and lingering
 
 ---
 
@@ -351,6 +411,10 @@ Before finalizing a story, verify:
 - [ ] Does the main character grow or learn something specific?
 - [ ] Is there a moment of challenge where success is uncertain?
 - [ ] Does the climax involve using BOTH cultures meaningfully?
+- [ ] Was the character budget small enough for 32 pages?
+- [ ] Is the antagonist's motivation revealed before the resolution?
+- [ ] Does the protagonist make a meaningful choice that changes the outcome?
+- [ ] Does the antagonist's change of heart span at least 3 pages?
 
 **Cultural Representation:**
 - [ ] Are both cultures represented equally and authentically?
@@ -381,7 +445,7 @@ Before finalizing a story, verify:
 - [ ] Is the problem age-appropriate (not too scary or complex)?
 - [ ] Can a 3-7 year old understand the solution?
 - [ ] Is the vocabulary challenging but not frustrating?
-- [ ] Would this story hold a child's attention for 24 pages?
+- [ ] Would this story hold a child's attention for 32 pages?
 
 ---
 
@@ -472,7 +536,7 @@ Before finalizing a story, verify:
 5. **Output format:**
    - Use JSON structure with all required fields
    - Ensure UTF-8 encoding for special characters
-   - Include all 24 pages consistently formatted
+   - Include all 32 pages consistently formatted
    - Proofread for typos in both languages
 
 ---
