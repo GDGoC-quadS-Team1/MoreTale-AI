@@ -17,7 +17,7 @@ def build_error(code: str, message: str, detail: dict[str, Any] | None = None) -
     return {"error": error}
 
 
-def require_api_key(api_key: str | None = Security(api_key_header)) -> None:
+async def require_api_key(api_key: str | None = Security(api_key_header)) -> None:
     expected_api_keys = get_settings().api_keys
     if not expected_api_keys:
         raise HTTPException(

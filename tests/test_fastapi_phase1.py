@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 
 try:
-    from fastapi.testclient import TestClient
+    from tests.asgi_test_client import ASGITestClient as TestClient
 except ModuleNotFoundError:  # pragma: no cover - local env without FastAPI
     TestClient = None
 
@@ -14,8 +14,9 @@ except ModuleNotFoundError:  # pragma: no cover - local env without FastAPI
     create_app = None
 
 try:
-    from generators.story.story_model import Page, Story, VocabularyEntry
+    from generators.story.story_model import STORY_PAGE_COUNT, Page, Story, VocabularyEntry
 except ModuleNotFoundError:  # pragma: no cover - local env without pydantic
+    STORY_PAGE_COUNT = None
     Page = None
     Story = None
     VocabularyEntry = None
@@ -39,7 +40,7 @@ def _build_fake_story():
                 )
             ],
         )
-        for page_number in range(1, 25)
+        for page_number in range(1, STORY_PAGE_COUNT + 1)
     ]
     return Story(
         title_primary="Test Title Primary",
@@ -58,6 +59,7 @@ def _build_fake_story():
     or create_app is None
     or Story is None
     or Page is None
+    or STORY_PAGE_COUNT is None
     or VocabularyEntry is None,
     "fastapi/pydantic dependencies are not installed in this environment",
 )
@@ -112,7 +114,7 @@ class TestFastAPIServerPhase1(unittest.TestCase):
     def test_post_stories_returns_202_with_required_fields(self) -> None:
         story_id = "20260221_120000_story_mina-friendship"
         with patch(
-            "app.services.story_orchestrator.StoryService.generate_story",
+            "app.services.generation_pipeline.generate_story",
             return_value=(_build_fake_story(), "gemini-2.5-flash"),
         ):
             with patch("app.services.story_orchestrator.make_story_id", return_value=story_id):
@@ -132,7 +134,7 @@ class TestFastAPIServerPhase1(unittest.TestCase):
     def test_background_success_updates_to_completed_and_result(self) -> None:
         story_id = "20260221_120001_story_mina-friendship"
         with patch(
-            "app.services.story_orchestrator.StoryService.generate_story",
+            "app.services.generation_pipeline.generate_story",
             return_value=(_build_fake_story(), "gemini-2.5-flash"),
         ):
             with patch("app.services.story_orchestrator.make_story_id", return_value=story_id):
@@ -164,7 +166,7 @@ class TestFastAPIServerPhase1(unittest.TestCase):
         self.assertEqual(result_response.status_code, 200)
         result_body = result_response.json()
         self.assertEqual(result_body["id"], story_id)
-        self.assertEqual(len(result_body["pages"]), 24)
+        self.assertEqual(len(result_body["pages"]), STORY_PAGE_COUNT)
         self.assertIsNone(result_body["pages"][0]["audio_primary_url"])
         self.assertIsNone(result_body["pages"][0]["audio_secondary_url"])
         self.assertIsNone(result_body["pages"][0]["illustration_url"])
@@ -189,7 +191,7 @@ class TestFastAPIServerPhase1(unittest.TestCase):
     def test_generation_failure_is_saved_in_meta(self) -> None:
         story_id = "20260221_120002_story_mina-friendship"
         with patch(
-            "app.services.story_orchestrator.StoryService.generate_story",
+            "app.services.generation_pipeline.generate_story",
             side_effect=RuntimeError("simulated failure"),
         ):
             with patch("app.services.story_orchestrator.make_story_id", return_value=story_id):
