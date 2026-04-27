@@ -260,11 +260,12 @@ class TestFastAPIServerPhase3Hardening(unittest.TestCase):
             payload = self._base_payload()
             payload["primary_lang"] = primary
             payload["secondary_lang"] = secondary
-            response = self._post_story(
-                story_id=f"20260221_145{i:03d}_story_iso",
-                payload=payload,
-                headers=self.headers_a,
-            )
+            with patch("app.services.rate_limiter.time.time", return_value=1700000000.0 + i * 60):
+                response = self._post_story(
+                    story_id=f"20260221_145{i:03d}_story_iso",
+                    payload=payload,
+                    headers=self.headers_a,
+                )
             self.assertEqual(
                 response.status_code, 202,
                 f"ISO code '{primary}' should be accepted, got {response.status_code}",
