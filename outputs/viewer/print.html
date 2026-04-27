@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MoreTale Print Book</title>
+    <link rel="stylesheet" href="/viewer/print.css?v=20260401-1" />
+  </head>
+  <body>
+    <main class="print-shell">
+      <header class="print-toolbar screen-only">
+        <div class="print-toolbar__heading">
+          <p class="eyebrow">Book PDF View</p>
+          <h1 id="print-book-title" class="print-book-title">동화 책 미리보기</h1>
+          <p id="print-book-subtitle" class="print-book-subtitle"></p>
+        </div>
+
+        <div class="print-toolbar__actions">
+          <label class="print-run-picker" for="print-run-select">
+            <span>Run</span>
+            <select id="print-run-select"></select>
+          </label>
+
+          <button id="print-trigger" class="print-trigger" type="button" disabled>PDF 저장 / 인쇄</button>
+          <a id="viewer-link" class="viewer-link" href="/viewer/">뷰어로 돌아가기</a>
+        </div>
+
+        <p id="print-status" class="print-status" aria-live="polite"></p>
+      </header>
+
+      <section id="book-preview" class="book-preview hidden" aria-live="polite"></section>
+    </main>
+
+    <script src="/viewer/print.js?v=20260401-1" defer></script>
+  </body>
+</html>

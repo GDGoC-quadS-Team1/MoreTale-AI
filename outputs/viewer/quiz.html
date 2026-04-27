@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MoreTale Quiz Viewer</title>
+    <link rel="stylesheet" href="/viewer/styles.css?v=20260427-quiz-1" />
+  </head>
+  <body>
+    <main class="quiz-shell">
+      <header class="quiz-header">
+        <div>
+          <p class="quiz-kicker">Book Quiz</p>
+          <h1 id="quiz-title" class="quiz-title">퀴즈</h1>
+          <p id="quiz-subtitle" class="quiz-subtitle"></p>
+        </div>
+
+        <div class="quiz-toolbar">
+          <label class="quiz-run-picker" for="quiz-run-select">
+            <span>Run</span>
+            <select id="quiz-run-select"></select>
+          </label>
+
+          <a id="story-view-link" class="story-view-link" href="/viewer/">책 뷰어</a>
+          <a id="quiz-json-link" class="quiz-json-link hidden" href="#" target="_blank" rel="noopener noreferrer">
+            JSON
+          </a>
+        </div>
+
+        <p id="quiz-status" class="status" aria-live="polite"></p>
+      </header>
+
+      <section id="quiz-summary" class="quiz-summary hidden"></section>
+      <section id="quiz-list" class="quiz-list hidden"></section>
+      <section id="quiz-empty" class="quiz-empty hidden">
+        <h2>이 책에는 아직 퀴즈가 없습니다.</h2>
+        <p>퀴즈 생성 옵션으로 다시 생성하면 이 화면에서 책별 문제와 정답을 확인할 수 있습니다.</p>
+      </section>
+    </main>
+
+    <script src="/viewer/quiz.js?v=20260427-quiz-1" defer></script>
+  </body>
+</html>

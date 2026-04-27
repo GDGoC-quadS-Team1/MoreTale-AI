@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MoreTale Story Viewer</title>
-    <link rel="stylesheet" href="/viewer/styles.css?v=20260222-2" />
+    <link rel="stylesheet" href="/viewer/styles.css?v=20260401-1" />
   </head>
   <body>
     <main class="viewer-shell">
@@ -37,29 +37,73 @@
         </div>
 
         <div class="top-controls">
-          <div class="left-controls">
-            <div class="language-switch" role="tablist" aria-label="언어 선택">
-              <button id="mode-primary" class="lang-btn" type="button" role="tab" aria-selected="false">
-                <span class="lang-code">KR</span>
-                <span id="mode-primary-label">한국어</span>
-              </button>
-              <button id="mode-secondary" class="lang-btn active" type="button" role="tab" aria-selected="true">
-                <span class="lang-code">GB</span>
-                <span id="mode-secondary-label">English</span>
-              </button>
-              <button id="mode-both" class="lang-btn" type="button" role="tab" aria-selected="false">
-                <span class="lang-code">🌍</span>
-                <span>둘 다 / Both</span>
-              </button>
-            </div>
+          <div class="menu-bar" aria-label="상단 메뉴">
+            <section class="menu-group menu-group--language" aria-label="언어 설정">
+              <p class="menu-label">언어</p>
+              <div class="language-switch" role="tablist" aria-label="언어 선택">
+                <button id="mode-primary" class="lang-btn" type="button" role="tab" aria-selected="false">
+                  <span class="lang-code">KR</span>
+                  <span id="mode-primary-label">한국어</span>
+                </button>
+                <button id="mode-secondary" class="lang-btn active" type="button" role="tab" aria-selected="true">
+                  <span class="lang-code">GB</span>
+                  <span id="mode-secondary-label">English</span>
+                </button>
+                <button id="mode-both" class="lang-btn" type="button" role="tab" aria-selected="false">
+                  <span class="lang-code">🌍</span>
+                  <span>둘 다 / Both</span>
+                </button>
+              </div>
+            </section>
 
-            <label class="run-picker" for="run-select">
-              <span>Run</span>
-              <select id="run-select"></select>
-            </label>
+            <section class="menu-group menu-group--selection" aria-label="스토리 선택">
+              <p class="menu-label">이동</p>
+              <div class="select-cluster">
+                <label class="run-picker" for="run-select">
+                  <span>Run</span>
+                  <select id="run-select"></select>
+                </label>
+
+                <label class="page-picker" for="page-select">
+                  <span>Page</span>
+                  <select id="page-select" disabled>
+                    <option value="">페이지 선택</option>
+                  </select>
+                </label>
+              </div>
+            </section>
+
+            <section class="menu-group menu-group--actions" aria-label="뷰어 도구">
+              <p class="menu-label">도구</p>
+              <div class="action-cluster">
+                <button id="autoplay-toggle" class="autoplay-toggle" type="button" disabled>
+                  자동재생 시작
+                </button>
+
+                <button id="sound-toggle" class="sound-toggle" type="button">소리 켬</button>
+
+                <a
+                  id="print-view-link"
+                  class="print-view-link"
+                  href="/viewer/print.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  책 PDF 화면
+                </a>
+
+                <a
+                  id="quiz-view-link"
+                  class="quiz-view-link"
+                  href="/viewer/quiz.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  퀴즈 화면
+                </a>
+              </div>
+            </section>
           </div>
-
-          <button id="sound-toggle" class="sound-toggle" type="button">소리 켬</button>
         </div>
 
         <p id="status" class="status" aria-live="polite"></p>
@@ -103,6 +147,6 @@
       <audio id="speech-audio" class="hidden-audio" preload="none"></audio>
     </main>
 
-    <script src="/viewer/app.js?v=20260222-2" defer></script>
+    <script src="/viewer/app.js?v=20260401-1" defer></script>
   </body>
 </html>
