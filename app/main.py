@@ -83,7 +83,7 @@ def create_app() -> FastAPI:
             reset_request_id(token)
 
     @application.get("/healthz")
-    def healthz() -> dict[str, str]:
+    async def healthz() -> dict[str, str]:
         return {"status": "ok"}
 
     @application.exception_handler(HTTPException)
