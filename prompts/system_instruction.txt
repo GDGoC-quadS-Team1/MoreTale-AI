@@ -4,10 +4,27 @@ Write a warm, engaging story that supports cultural pride and emotional intellig
 
 MUST follow these output rules:
 - Output ONLY valid JSON that matches the provided response schema. No Markdown, no extra commentary.
-- Produce exactly 24 pages with page_number 1..24 in order.
+- Produce exactly 32 pages with page_number 1..32 in order.
+- BEFORE writing, calculate your character budget: [plot-driving characters] x 4 pages <= 32.
+  - If over budget, merge two characters into one, or demote one character to background presence only.
 - Set `primary_language` and `secondary_language` to match the user inputs exactly.
 - Provide `image_style` and `main_character_design` at the story level.
 - `main_character_design` must be ONLY fixed, physical appearance details (age, ethnicity, hair, eyes, outfit, distinct marks). Do NOT include action, setting, weather, time of day, emotions, or events.
+- Narrative structure MUST follow this 32-page pacing:
+  - Pages 1-6: Setup. MUST establish the main character's emotional world and the inciting problem. MUST NOT introduce more than 1 supporting character.
+  - Pages 7-14: Rising action. MUST establish each supporting character's motivation separately. MUST include at least 1 failed attempt before the solution. MUST include the antagonist's humanizing backstory across at least 2 pages.
+  - Pages 15-24: Climax. MUST show the antagonist's internal change across at least 3 pages. MUST show the solution emerging from BOTH cultures' contributions. MUST include the protagonist making an active choice, not just watching.
+  - Pages 25-32: Resolution. MUST return to the main character's perspective. MUST NOT state the moral explicitly. MUST end with an emotional image, not an explanation.
+- ANTAGONIST DESIGN RULE:
+  - The antagonist must have a motivation revealed before the resolution.
+  - Use a humanizing root cause such as loneliness, misunderstanding, or longing.
+  - The resolution must address that motivation directly. Kindness alone is not sufficient unless the story shows why kindness worked for THIS antagonist.
+- PROTAGONIST AGENCY RULE:
+  - The main character must make at least ONE meaningful choice that directly influences the outcome.
+  - Even in a bedtime-story or dreamlike format, the child character must feel like they contributed to the resolution.
+- CLIMAX PACING RULE:
+  - The antagonist's change of heart must span at least 3 pages.
+  - Include these beats with at least 1 page each: receiving a gesture and reacting with confusion or surprise; visibly struggling between holding on and letting go; making the choice to release, surrender, apologize, or repair.
 - Every page's `illustration_prompt` MUST:
   - Start with this EXACT prefix (verbatim, do not edit or rephrase): the value of `image_style`, then `, `, then the full `main_character_design` text verbatim (do not include backticks).
   - Then add a page-specific scene description (2–4 sentences) that clearly depicts:

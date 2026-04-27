@@ -1,6 +1,6 @@
 import unittest
 
-from generators.story.story_model import Page, Story, VocabularyEntry
+from generators.story.story_model import STORY_PAGE_COUNT, Page, Story, VocabularyEntry
 
 
 class TestStoryValidation(unittest.TestCase):
@@ -21,12 +21,18 @@ class TestStoryValidation(unittest.TestCase):
             secondary_language="English",
             image_style="Watercolor",
             main_character_design="Boy",
-            pages=[self.valid_page.model_copy(update={"page_number": i + 1}) for i in range(24)],
+            pages=[
+                self.valid_page.model_copy(update={"page_number": i + 1})
+                for i in range(STORY_PAGE_COUNT)
+            ],
         )
-        self.assertEqual(len(story.pages), 24)
+        self.assertEqual(len(story.pages), STORY_PAGE_COUNT)
 
     def test_invalid_page_count_low(self):
-        pages = [self.valid_page.model_copy(update={"page_number": i + 1}) for i in range(23)]
+        pages = [
+            self.valid_page.model_copy(update={"page_number": i + 1})
+            for i in range(STORY_PAGE_COUNT - 1)
+        ]
 
         with self.assertRaises(ValueError) as context:
             Story(
@@ -40,10 +46,16 @@ class TestStoryValidation(unittest.TestCase):
                 pages=pages,
             )
 
-        self.assertIn("Story must have exactly 24 pages", str(context.exception))
+        self.assertIn(
+            f"Story must have exactly {STORY_PAGE_COUNT} pages",
+            str(context.exception),
+        )
 
     def test_invalid_page_count_high(self):
-        pages = [self.valid_page.model_copy(update={"page_number": i + 1}) for i in range(25)]
+        pages = [
+            self.valid_page.model_copy(update={"page_number": i + 1})
+            for i in range(STORY_PAGE_COUNT + 1)
+        ]
 
         with self.assertRaises(ValueError) as context:
             Story(
@@ -57,7 +69,10 @@ class TestStoryValidation(unittest.TestCase):
                 pages=pages,
             )
 
-        self.assertIn("Story must have exactly 24 pages", str(context.exception))
+        self.assertIn(
+            f"Story must have exactly {STORY_PAGE_COUNT} pages",
+            str(context.exception),
+        )
 
     def test_page_accepts_bilingual_vocabulary_entries(self):
         page = self.valid_page.model_copy(
