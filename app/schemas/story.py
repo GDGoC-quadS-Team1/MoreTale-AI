@@ -123,9 +123,20 @@ class StoryCreateRequest(BaseModel):
     @field_validator("primary_lang", "secondary_lang")
     @classmethod
     def validate_language(cls, value: str) -> str:
+        _ISO_TO_LANGUAGE: dict[str, str] = {
+            "ko": "Korean",
+            "en": "English",
+            "ja": "Japanese",
+            "zh": "Chinese",
+            "es": "Spanish",
+            "vi": "Vietnamese",
+            "fr": "French",
+            "de": "German",
+        }
         normalized = value.strip()
         if not normalized:
             raise ValueError("language must not be empty")
+        normalized = _ISO_TO_LANGUAGE.get(normalized.lower(), normalized)
         allowed = get_settings().allowed_languages
         allowed_map = {item.lower(): item for item in allowed}
         mapped = allowed_map.get(normalized.lower())

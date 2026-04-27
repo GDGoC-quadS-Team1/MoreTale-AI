@@ -69,6 +69,9 @@ class JobStore:
             result=result,
         )
 
+    def mark_canceled(self, story_id: str) -> dict[str, Any]:
+        return self._set_job_status(story_id=story_id, status="canceled")
+
     def _set_job_status(
         self,
         story_id: str,

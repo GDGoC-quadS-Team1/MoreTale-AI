@@ -14,6 +14,7 @@ from app.schemas.story import (
 from app.services.rate_limiter import post_stories_rate_limiter
 from app.services.request_context import get_request_id
 from app.services.story_orchestrator import (
+    cancel_story_job,
     enqueue_story_generation,
     load_story_result,
     load_story_status,
@@ -88,3 +89,17 @@ async def get_story(story_id: str) -> StoryStatusResponse:
 )
 async def get_story_result(story_id: str) -> StoryResultResponse:
     return load_story_result(story_id=story_id)
+
+
+@router.delete(
+    "/{story_id}",
+    response_model=StoryStatusResponse,
+    responses={
+        401: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
+    },
+)
+async def cancel_story(story_id: str) -> StoryStatusResponse:
+    return cancel_story_job(story_id=story_id)
