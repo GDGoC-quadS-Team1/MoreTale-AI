@@ -1,7 +1,7 @@
 # MoreTale-AI Server
 
 MoreTale-AI의 FastAPI 마이크로서비스입니다.  
-동화 생성 요청을 받아 비동기 작업으로 처리하고, 결과(JSON/TTS/표지+내부 일러스트)를 URL 기반으로 제공합니다.
+동화 생성 요청을 받아 비동기 작업으로 처리하고, 결과(JSON/퀴즈/TTS/표지+내부 일러스트)를 URL 기반으로 제공합니다.
 
 CLI 사용 가이드는 `cli/README.md`를 참고하세요.
 
@@ -36,10 +36,11 @@ app/
   schemas/
     story.py
   services/
-    story_service.py
-    tts_service.py
-    illustration_service.py
-    storage.py
+    generation_pipeline.py
+    story_orchestrator.py
+    story_result_builder.py
+    output_paths.py
+    result_manifests.py
     job_store.py
     rate_limiter.py
     request_context.py
@@ -81,9 +82,10 @@ MORETALE_THEME_MAX_LEN=120
 MORETALE_EXTRA_PROMPT_MAX_LEN=500
 MORETALE_CHILD_NAME_MAX_LEN=40
 MORETALE_ALLOWED_STORY_MODELS=gemini-2.5-flash
+MORETALE_ALLOWED_QUIZ_MODELS=gemini-2.5-flash
 MORETALE_ALLOWED_TTS_MODELS=gemini-2.5-flash-preview-tts
 MORETALE_ALLOWED_ILLUSTRATION_MODELS=gemini-2.5-flash-image
-MORETALE_ALLOWED_LANGUAGES=Korean,English,Japanese,Chinese,Spanish,French,German
+MORETALE_ALLOWED_LANGUAGES=Korean,English,Japanese,Chinese,Spanish,Vietnamese,French,German
 ```
 
 ### 3) 실행
@@ -107,9 +109,11 @@ curl -X POST http://127.0.0.1:8000/api/stories/ \
     "secondary_lang": "English",
     "theme": "Friendship",
     "extra_prompt": "Include a dragon",
-    "include_style_guide": true,
     "generation": {
       "story_model": "gemini-2.5-flash",
+      "enable_quiz": true,
+      "quiz_model": "gemini-2.5-flash",
+      "quiz_question_count": 5,
       "enable_tts": true,
       "enable_illustration": true,
       "enable_cover_illustration": true,
@@ -134,6 +138,10 @@ curl -H "X-API-Key: key-a" \
 ```
 
 ## 응답/운영 규약
+
+- 스토리 생성 시 `prompts/style_guide.txt`는 항상 시스템 프롬프트에 포함됩니다.
+- 요청의 `include_style_guide` 필드는 하위호환용으로만 유지되며, 값과 무관하게 스타일 가이드는 적용됩니다.
+- Gemini/Google SDK 기반 생성기는 실제 생성 작업 시점에 lazy import됩니다. `/healthz`, 상태 조회, 결과 조회는 생성기 SDK 로드 없이 동작해야 합니다.
 
 - 표준 에러 포맷:
 
