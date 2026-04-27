@@ -46,7 +46,6 @@ python main.py \
   --secondary_lang "English" \
   --theme "Friendship" \
   --extra_prompt "Include a dragon" \
-  --include_style_guide \
   --model_name "gemini-2.5-flash"
 ```
 
@@ -56,7 +55,27 @@ python main.py \
 outputs/{timestamp}_story_{slug}/story_{model_name}.json
 ```
 
-### 4) 동화 + TTS 생성
+### 4) 동화 + 퀴즈 생성
+
+```bash
+python main.py \
+  --child_name "Mina" \
+  --child_age 5 \
+  --primary_lang "Korean" \
+  --secondary_lang "English" \
+  --theme "Friendship" \
+  --enable_quiz \
+  --quiz_model "gemini-2.5-flash" \
+  --quiz_question_count 5
+```
+
+퀴즈 출력:
+
+```text
+outputs/{timestamp}_story_{slug}/quiz_{quiz_model}.json
+```
+
+### 5) 동화 + TTS 생성
 
 ```bash
 python main.py \
@@ -78,7 +97,7 @@ outputs/{timestamp}_story_{slug}/audio/02_<secondary-lang-slug>/page_01_secondar
 outputs/{timestamp}_story_{slug}/audio/manifest.json
 ```
 
-### 5) 동화 + 일러스트 일괄 생성
+### 6) 동화 + 일러스트 일괄 생성
 
 ```bash
 python main.py \
@@ -93,7 +112,7 @@ python main.py \
   --illustration_skip_existing
 ```
 
-### 6) 기존 동화 JSON으로 일러스트만 생성
+### 7) 기존 동화 JSON으로 일러스트만 생성
 
 ```bash
 python generators/illustration/illustration_generator.py \
@@ -110,7 +129,8 @@ python generators/illustration/illustration_generator.py \
 - `--secondary_lang` (필수): 보조 언어
 - `--theme` (선택): 테마
 - `--extra_prompt` (선택): 추가 요청사항
-- `--include_style_guide` (선택): `prompts/style_guide.txt` 포함
+- `prompts/style_guide.txt`는 항상 시스템 프롬프트에 포함됨
+- `--include_style_guide` (선택): 하위호환용 no-op 옵션
 - `--model_name` (선택, 기본 `gemini-2.5-flash`): 스토리 모델
 - `--enable_tts` (선택): TTS 생성 활성화
 - `--tts_model` (선택, 기본 `gemini-2.5-flash-preview-tts`)
@@ -136,7 +156,7 @@ python generators/illustration/illustration_generator.py \
 - `main_character_design`
 - `illustration_prefix` (선택)
 - `cover_illustration_prompt` (선택)
-- `pages` (정확히 24개)
+- `pages` (정확히 32개)
   - `page_number`
   - `text_primary`
   - `text_secondary`
