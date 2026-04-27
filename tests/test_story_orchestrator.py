@@ -3,20 +3,40 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from fastapi import BackgroundTasks, HTTPException
+try:
+    from fastapi import BackgroundTasks, HTTPException
+except ModuleNotFoundError:  # pragma: no cover
+    BackgroundTasks = None
+    HTTPException = None
 
-from app.schemas.story import StoryCreateRequest
-from app.services.story_orchestrator import (
-    enqueue_story_generation,
-    job_store,
-    load_story_result,
-    run_story_generation_job_background,
-    run_story_generation_job,
-)
-from generators.story.story_model import STORY_PAGE_COUNT, Page, Story, VocabularyEntry
+try:
+    from app.schemas.story import StoryCreateRequest
+    from app.services.story_orchestrator import (
+        cancel_story_job,
+        enqueue_story_generation,
+        job_store,
+        load_story_result,
+        run_story_generation_job_background,
+        run_story_generation_job,
+    )
+    from generators.story.story_model import STORY_PAGE_COUNT, Page, Story, VocabularyEntry
+    _DEPS_AVAILABLE = True
+except ModuleNotFoundError:  # pragma: no cover
+    _DEPS_AVAILABLE = False
+    StoryCreateRequest = None
+    cancel_story_job = None
+    enqueue_story_generation = None
+    job_store = None
+    load_story_result = None
+    run_story_generation_job_background = None
+    run_story_generation_job = None
+    STORY_PAGE_COUNT = None
+    Page = None
+    Story = None
+    VocabularyEntry = None
 
 
-def _build_fake_story() -> Story:
+def _build_fake_story():
     pages = [
         Page(
             page_number=page_number,
@@ -48,6 +68,10 @@ def _build_fake_story() -> Story:
     )
 
 
+@unittest.skipIf(
+    not _DEPS_AVAILABLE or BackgroundTasks is None,
+    "fastapi/pydantic dependencies are not installed in this environment",
+)
 class TestStoryOrchestrator(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp_dir = tempfile.TemporaryDirectory()
@@ -161,6 +185,84 @@ class TestStoryOrchestrator(unittest.TestCase):
 
         self.assertEqual(context.exception.status_code, 409)
         self.assertEqual(context.exception.detail["error"]["code"], "STORY_NOT_READY")
+
+    def test_cancel_queued_job_returns_canceled_status(self) -> None:
+        story_id = "20260221_151001_story_mina"
+        job_store.initialize_job(story_id=story_id, request_payload=self._build_create_payload())
+
+        result = cancel_story_job(story_id)
+
+        self.assertEqual(result.status, "canceled")
+        self.assertEqual(job_store.load_job(story_id)["status"], "canceled")
+
+    def test_cancel_running_job_returns_canceled_status(self) -> None:
+        story_id = "20260221_151002_story_mina"
+        job_store.initialize_job(story_id=story_id, request_payload=self._build_create_payload())
+        job_store.mark_running(story_id)
+
+        result = cancel_story_job(story_id)
+
+        self.assertEqual(result.status, "canceled")
+
+    def test_cancel_completed_job_raises_409(self) -> None:
+        story_id = "20260221_151003_story_mina"
+        payload = self._build_create_payload()
+        job_store.initialize_job(story_id=story_id, request_payload=payload)
+
+        with patch(
+            "app.services.generation_pipeline.generate_story",
+            return_value=(_build_fake_story(), "gemini-2.5-flash"),
+        ):
+            run_story_generation_job(story_id=story_id, request_payload=payload)
+
+        with self.assertRaises(HTTPException) as ctx:
+            cancel_story_job(story_id)
+
+        self.assertEqual(ctx.exception.status_code, 409)
+        self.assertEqual(ctx.exception.detail["error"]["code"], "STORY_CANCEL_NOT_ALLOWED")
+
+    def test_cancel_failed_job_raises_409(self) -> None:
+        story_id = "20260221_151004_story_mina"
+        job_store.initialize_job(story_id=story_id, request_payload=self._build_create_payload())
+        job_store.mark_failed(story_id, error={"code": "ERR", "message": "fail"})
+
+        with self.assertRaises(HTTPException) as ctx:
+            cancel_story_job(story_id)
+
+        self.assertEqual(ctx.exception.status_code, 409)
+        self.assertEqual(ctx.exception.detail["error"]["code"], "STORY_CANCEL_NOT_ALLOWED")
+
+    def test_cancel_already_canceled_job_raises_409(self) -> None:
+        story_id = "20260221_151005_story_mina"
+        job_store.initialize_job(story_id=story_id, request_payload=self._build_create_payload())
+        job_store.mark_canceled(story_id)
+
+        with self.assertRaises(HTTPException) as ctx:
+            cancel_story_job(story_id)
+
+        self.assertEqual(ctx.exception.status_code, 409)
+        self.assertEqual(ctx.exception.detail["error"]["code"], "STORY_CANCEL_NOT_ALLOWED")
+
+    def test_cancel_nonexistent_job_raises_404(self) -> None:
+        with self.assertRaises(HTTPException) as ctx:
+            cancel_story_job("nonexistent-id-xyz-abc")
+
+        self.assertEqual(ctx.exception.status_code, 404)
+        self.assertEqual(ctx.exception.detail["error"]["code"], "STORY_NOT_FOUND")
+
+    def test_run_job_skips_if_already_canceled(self) -> None:
+        story_id = "20260221_151006_story_mina"
+        payload = self._build_create_payload()
+        job_store.initialize_job(story_id=story_id, request_payload=payload)
+        job_store.mark_canceled(story_id)
+
+        with patch(
+            "app.services.generation_pipeline.generate_story",
+        ) as mocked_generate:
+            run_story_generation_job(story_id=story_id, request_payload=payload)
+
+        mocked_generate.assert_not_called()
+        self.assertEqual(job_store.load_job(story_id)["status"], "canceled")
 
 
 if __name__ == "__main__":

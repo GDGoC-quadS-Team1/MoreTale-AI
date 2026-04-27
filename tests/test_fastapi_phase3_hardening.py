@@ -86,7 +86,7 @@ class TestFastAPIServerPhase3Hardening(unittest.TestCase):
                 "MORETALE_ALLOWED_STORY_MODELS": "gemini-2.5-flash",
                 "MORETALE_ALLOWED_TTS_MODELS": "gemini-2.5-flash-preview-tts",
                 "MORETALE_ALLOWED_ILLUSTRATION_MODELS": "gemini-2.5-flash-image",
-                "MORETALE_ALLOWED_LANGUAGES": "Korean,English,Japanese,Chinese,Spanish,French,German",
+                "MORETALE_ALLOWED_LANGUAGES": "Korean,English,Japanese,Chinese,Spanish,Vietnamese,French,German",
             },
             clear=False,
         )
@@ -249,6 +249,75 @@ class TestFastAPIServerPhase3Hardening(unittest.TestCase):
         self.assertIn("illustration_status", body["pages"][0])
         self.assertIn("vocabulary", body["pages"][0])
         self.assertIn("pronunciation", body["pages"][0]["vocabulary"][0])
+
+
+    def test_iso_language_codes_are_accepted_and_normalized(self) -> None:
+        iso_pairs = [
+            ("ko", "en"), ("en", "ko"), ("vi", "ko"), ("ja", "ko"),
+            ("zh", "ko"), ("es", "ko"), ("fr", "ko"), ("de", "ko"),
+        ]
+        for i, (primary, secondary) in enumerate(iso_pairs):
+            payload = self._base_payload()
+            payload["primary_lang"] = primary
+            payload["secondary_lang"] = secondary
+            response = self._post_story(
+                story_id=f"20260221_145{i:03d}_story_iso",
+                payload=payload,
+                headers=self.headers_a,
+            )
+            self.assertEqual(
+                response.status_code, 202,
+                f"ISO code '{primary}' should be accepted, got {response.status_code}",
+            )
+            self.assertIn("id", response.json())
+
+    def test_iso_language_code_case_insensitive(self) -> None:
+        for i, (primary, secondary) in enumerate([("KO", "en"), ("EN", "ko")]):
+            payload = self._base_payload()
+            payload["primary_lang"] = primary
+            payload["secondary_lang"] = secondary
+            response = self._post_story(
+                story_id=f"20260221_146{i:03d}_story_iso_upper",
+                payload=payload,
+                headers=self.headers_a,
+            )
+            self.assertEqual(
+                response.status_code, 202,
+                f"Uppercase ISO code '{primary}' should be accepted",
+            )
+
+    def test_full_language_names_still_work(self) -> None:
+        for i, (primary, secondary) in enumerate([
+            ("Korean", "Vietnamese"),
+            ("English", "Japanese"),
+        ]):
+            payload = self._base_payload()
+            payload["primary_lang"] = primary
+            payload["secondary_lang"] = secondary
+            response = self._post_story(
+                story_id=f"20260221_147{i:03d}_story_fullname",
+                payload=payload,
+                headers=self.headers_a,
+            )
+            self.assertEqual(
+                response.status_code, 202,
+                f"Full language name '{primary}' should still work",
+            )
+
+    def test_invalid_language_code_returns_422(self) -> None:
+        for invalid_code in ["kk", "xx"]:
+            payload = self._base_payload()
+            payload["primary_lang"] = invalid_code
+            response = self.client.post(
+                "/api/stories/",
+                json=payload,
+                headers=self.headers_a,
+            )
+            self.assertEqual(
+                response.status_code, 422,
+                f"Invalid code '{invalid_code}' should return 422",
+            )
+            self.assertEqual(response.json()["error"]["code"], "VALIDATION_ERROR")
 
 
 if __name__ == "__main__":

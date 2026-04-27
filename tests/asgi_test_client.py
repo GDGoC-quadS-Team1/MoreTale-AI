@@ -17,6 +17,9 @@ class ASGITestClient:
     def post(self, url: str, **kwargs: Any) -> httpx.Response:
         return anyio.run(self._request, "POST", url, kwargs)
 
+    def delete(self, url: str, **kwargs: Any) -> httpx.Response:
+        return anyio.run(self._request, "DELETE", url, kwargs)
+
     async def _request(
         self,
         method: str,
