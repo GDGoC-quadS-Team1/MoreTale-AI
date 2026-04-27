@@ -19,6 +19,9 @@ AssetStatus = Literal[
 
 class GenerationOptions(BaseModel):
     story_model: str = Field(default="gemini-2.5-flash")
+    enable_quiz: bool = Field(default=False)
+    quiz_model: str = Field(default="gemini-2.5-flash")
+    quiz_question_count: int = Field(default=5, ge=1, le=10)
     enable_tts: bool = Field(default=False)
     tts_model: str = Field(default="gemini-2.5-flash-preview-tts")
     tts_voice: str = Field(default="Achernar")
@@ -39,6 +42,15 @@ class GenerationOptions(BaseModel):
         allowed = get_settings().allowed_story_models
         if normalized not in allowed:
             raise ValueError(f"story_model must be one of {list(allowed)}")
+        return normalized
+
+    @field_validator("quiz_model")
+    @classmethod
+    def validate_quiz_model(cls, value: str) -> str:
+        normalized = value.strip()
+        allowed = get_settings().allowed_quiz_models
+        if normalized not in allowed:
+            raise ValueError(f"quiz_model must be one of {list(allowed)}")
         return normalized
 
     @field_validator("tts_model")
@@ -67,7 +79,10 @@ class StoryCreateRequest(BaseModel):
     secondary_lang: str = Field(..., min_length=1)
     theme: str = ""
     extra_prompt: str = ""
-    include_style_guide: bool = False
+    include_style_guide: bool = Field(
+        default=True,
+        description="Deprecated: prompts/style_guide.txt is always applied.",
+    )
     generation: GenerationOptions = Field(default_factory=GenerationOptions)
 
     @field_validator("child_name")
@@ -98,6 +113,12 @@ class StoryCreateRequest(BaseModel):
         if len(normalized) > max_len:
             raise ValueError(f"extra_prompt must be <= {max_len} characters")
         return normalized
+
+    @field_validator("include_style_guide", mode="before")
+    @classmethod
+    def force_include_style_guide(cls, value: Any) -> bool:
+        del value
+        return True
 
     @field_validator("primary_lang", "secondary_lang")
     @classmethod
@@ -224,6 +245,7 @@ class StoryResultResponse(BaseModel):
     id: str
     status: JobStatus
     story_json_url: str | None = None
+    quiz_json_url: str | None = None
     assets: StoryAssetsResponse
     meta: StoryResultMetaResponse
     pages: list[StoryPageResponse]

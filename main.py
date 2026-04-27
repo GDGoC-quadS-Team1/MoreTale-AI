@@ -32,9 +32,25 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--extra_prompt", default="", help="Additional request or details")
     parser.add_argument("--model_name", default="gemini-2.5-flash", help="Gemini model name to use")
     parser.add_argument(
+        "--enable_quiz",
+        action="store_true",
+        help="Generate a story-comprehension quiz JSON with answer key.",
+    )
+    parser.add_argument(
+        "--quiz_model",
+        default="gemini-2.5-flash",
+        help="Gemini model name to use when --enable_quiz is set.",
+    )
+    parser.add_argument(
+        "--quiz_question_count",
+        type=int,
+        default=5,
+        help="Number of quiz questions to generate when --enable_quiz is set.",
+    )
+    parser.add_argument(
         "--include_style_guide",
         action="store_true",
-        help="Include prompts/style_guide.txt in the system instruction (more detailed but longer prompt).",
+        help="Deprecated no-op. prompts/style_guide.txt is always included in the system instruction.",
     )
     parser.add_argument(
         "--enable_tts",
@@ -110,8 +126,11 @@ def build_pipeline_request(args: argparse.Namespace) -> StoryPipelineRequest:
         secondary_lang=args.secondary_lang,
         theme=args.theme,
         extra_prompt=args.extra_prompt,
-        include_style_guide=args.include_style_guide,
+        include_style_guide=True,
         story_model=args.model_name,
+        enable_quiz=args.enable_quiz,
+        quiz_model=args.quiz_model,
+        quiz_question_count=args.quiz_question_count,
         enable_tts=args.enable_tts,
         tts_model=args.tts_model,
         tts_voice=args.tts_voice,
@@ -127,26 +146,35 @@ def build_pipeline_request(args: argparse.Namespace) -> StoryPipelineRequest:
     )
 
 
+def build_output_dir(timestamp: str, story, _story_model: str) -> Path:
+    safe_title = slugify(getattr(story, "title_primary", ""))
+    if not safe_title:
+        safe_title = slugify(getattr(story, "title_secondary", ""))
+    if not safe_title:
+        safe_title = "story"
+    return Path("outputs") / f"{timestamp}_story_{safe_title}"
+
+
 def main() -> None:
     args = build_parser().parse_args()
     pipeline_request = build_pipeline_request(args)
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-
-    def output_dir_factory(story, _story_model: str) -> Path:
-        safe_title = slugify(story.title_primary)
-        return Path("outputs") / f"{timestamp}_story_{safe_title}"
 
     print("Generating bilingual fairy tale...")
 
     try:
         result = run_story_generation_pipeline(
             request=pipeline_request,
-            output_dir_factory=output_dir_factory,
+            output_dir_factory=lambda story, story_model: build_output_dir(
+                timestamp, story, story_model
+            ),
             strict_assets=True,
         )
 
         print(f"Generated story: {result.story.title_primary}")
         print(f"Story saved to: {result.story_json_path}")
+        if pipeline_request.enable_quiz:
+            print(f"Quiz saved to: {result.quiz_json_path}")
 
         if pipeline_request.enable_tts and result.tts_result is not None:
             print(
